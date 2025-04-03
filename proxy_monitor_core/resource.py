@@ -1,6 +1,5 @@
 from pysnmp.hlapi import *
 from .ssh import SSHClient
-from .session import SessionManager
 from .config import Config
 from .utils import get_current_timestamp, validate_resource_data, logger, split_line
 
@@ -9,7 +8,6 @@ class ResourceMonitor:
         self.host = host
         self.username = username
         self.password = password
-        self.session_manager = SessionManager(host, username, password)
 
     def get_memory_and_uniq_clients(self) -> tuple:
         """메모리 사용률과 고유 클라이언트 수를 한번에 조회"""

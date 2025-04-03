@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프록시 모니터링 시스템</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">프록시 모니터링 시스템</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">대시보드</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="sessionLink">세션 관리</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="configLink">설정</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 메인 콘텐츠 -->
+        <div id="mainContent">
+            <!-- 대시보드 화면 -->
+            <div id="dashboard">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">모니터링 서버</h5>
+                                <button class="btn btn-primary btn-sm" id="addServerBtn">서버 추가</button>
+                            </div>
+                            <div class="card-body">
+                                <div id="serverList" class="list-group">
+                                    <!-- 서버 목록 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">모니터링 설정</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="monitoringForm">
+                                    <div class="mb-3">
+                                        <label for="username" class="form-label">SSH 계정</label>
+                                        <input type="text" class="form-control" id="username" value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">SSH 비밀번호</label>
+                                        <input type="password" class="form-control" id="password" value="">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="interval" class="form-label">조회 간격 (초)</label>
+                                        <select class="form-select" id="interval">
+                                            <option value="10">10초</option>
+                                            <option value="30">30초</option>
+                                            <option value="60" selected>1분</option>
+                                            <option value="300">5분</option>
+                                        </select>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-success" id="startMonitoringBtn">모니터링 시작</button>
+                                        <button type="button" class="btn btn-danger" id="stopMonitoringBtn">모니터링 중지</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">리소스 모니터링</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>서버</th>
+                                                <th>날짜</th>
+                                                <th>시간</th>
+                                                <th>CPU(%)</th>
+                                                <th>메모리(%)</th>
+                                                <th>고유 클라이언트</th>
+                                                <th>HTTP</th>
+                                                <th>HTTPS</th>
+                                                <th>FTP</th>
+                                                <th>CC</th>
+                                                <th>CS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="resourceData">
+                                            <!-- 리소스 데이터 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 세션 관리 화면 -->
+            <div id="sessionManager" class="d-none">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">세션 관리</h5>
+                        <div>
+                            <div class="input-group">
+                                <select class="form-select" id="sessionServerSelect">
+                                    <!-- 서버 목록 -->
+                                </select>
+                                <input type="text" class="form-control" id="sessionSearch" placeholder="검색어...">
+                                <button class="btn btn-primary" id="sessionSearchBtn">검색</button>
+                                <button class="btn btn-outline-secondary" id="sessionRefreshBtn">새로고침</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>생성 시간</th>
+                                        <th>사용자</th>
+                                        <th>클라이언트 IP</th>
+                                        <th>프록시 IP</th>
+                                        <th>URL</th>
+                                        <th>받은 바이트</th>
+                                        <th>보낸 바이트</th>
+                                        <th>세션 시간(초)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sessionData">
+                                    <!-- 세션 데이터 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 설정 화면 -->
+            <div id="configManager" class="d-none">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">시스템 설정</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="configForm">
+                            <div class="mb-3">
+                                <label for="sshUsername" class="form-label">기본 SSH 계정</label>
+                                <input type="text" class="form-control" id="sshUsername">
+                            </div>
+                            <div class="mb-3">
+                                <label for="sshPassword" class="form-label">기본 SSH 비밀번호</label>
+                                <input type="password" class="form-control" id="sshPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label for="snmpCommunity" class="form-label">SNMP 커뮤니티</label>
+                                <input type="text" class="form-control" id="snmpCommunity">
+                            </div>
+                            <div class="mb-3">
+                                <label for="cpuThreshold" class="form-label">CPU 임계값 (%)</label>
+                                <input type="number" class="form-control" id="cpuThreshold" min="0" max="100">
+                            </div>
+                            <div class="mb-3">
+                                <label for="memoryThreshold" class="form-label">메모리 임계값 (%)</label>
+                                <input type="number" class="form-control" id="memoryThreshold" min="0" max="100">
+                            </div>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-primary" id="saveConfigBtn">설정 저장</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 서버 추가 모달 -->
+    <div class="modal fade" id="addServerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">서버 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addServerForm">
+                        <div class="mb-3">
+                            <label for="serverAddress" class="form-label">서버 주소 (IP 또는 도메인)</label>
+                            <input type="text" class="form-control" id="serverAddress" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveServerBtn">추가</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='vendor/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

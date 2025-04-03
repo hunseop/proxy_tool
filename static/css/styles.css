@@ -1,0 +1,66 @@
+/* 기본 스타일 */
+body {
+    background-color: #f8f9fa;
+}
+
+/* 카드 스타일 */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* 테이블 스타일 */
+.table th {
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+/* 임계값 초과 시 스타일 */
+.warning-cpu {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.warning-memory {
+    color: #fd7e14;
+    font-weight: bold;
+}
+
+/* 서버 목록 스타일 */
+#serverList .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#serverList .badge {
+    cursor: pointer;
+}
+
+/* 로딩 인디케이터 */
+.loading {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 0.2em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border .75s linear infinite;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+    .input-group {
+        flex-direction: column;
+    }
+    
+    .input-group > * {
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+} 
