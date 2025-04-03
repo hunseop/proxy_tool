@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // 서버 목록 (로컬 스토리지에서 로드)
+    // 서버 데이터 (로컬 스토리지에서 로드)
     let servers = JSON.parse(localStorage.getItem('proxyServers') || '[]');
     
     // 현재 화면 (대시보드, 세션 관리, 설정)
@@ -16,12 +16,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let memoryThreshold = 75;  // 기본값
     
     // 이벤트 리스너 설정
-    document.getElementById('addServerBtn').addEventListener('click', showAddServerModal);
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            switchView(this.getAttribute('data-view'));
+        });
+    });
+    
+    document.getElementById('addServerBtn').addEventListener('click', () => addServerModal.show());
     document.getElementById('saveServerBtn').addEventListener('click', saveServer);
     document.getElementById('startMonitoringBtn').addEventListener('click', startMonitoring);
     document.getElementById('stopMonitoringBtn').addEventListener('click', stopMonitoring);
-    document.getElementById('sessionLink').addEventListener('click', () => switchView('sessionManager'));
-    document.getElementById('configLink').addEventListener('click', () => switchView('configManager'));
     document.getElementById('sessionSearchBtn').addEventListener('click', loadSessionData);
     document.getElementById('sessionRefreshBtn').addEventListener('click', () => loadSessionData(true));
     document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
@@ -33,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * 초기화 함수
      */
     function init() {
-        // 서버 목록 로드
+        // 서버 목록 업데이트
         updateServerList();
         
         // 설정 로드
@@ -47,14 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * 서버 추가 모달 표시
-     */
-    function showAddServerModal() {
-        document.getElementById('serverAddress').value = '';
-        addServerModal.show();
-    }
-    
-    /**
      * 서버 추가
      */
     function saveServer() {
@@ -65,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // 중복 체크
+        // 서버 중복 체크
         if (servers.includes(serverAddress)) {
             alert('이미 등록된 서버입니다.');
             return;
@@ -91,29 +88,39 @@ document.addEventListener('DOMContentLoaded', function() {
      * 서버 목록 업데이트
      */
     function updateServerList() {
-        const serverList = document.getElementById('serverList');
-        serverList.innerHTML = '';
+        const container = document.getElementById('serverGroups');
+        const monitorSelect = document.getElementById('monitorServerSelect');
         
+        // 설정 페이지의 서버 목록 업데이트
+        container.innerHTML = '';
         servers.forEach(server => {
-            const item = document.createElement('a');
-            item.className = 'list-group-item list-group-item-action';
-            item.innerHTML = `
-                ${server}
-                <span class="badge bg-danger remove-server" data-server="${server}">삭제</span>
+            const serverItem = document.createElement('div');
+            serverItem.className = 'server-item';
+            serverItem.innerHTML = `
+                <span>${server}</span>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeServer('${server}')">삭제</button>
             `;
-            serverList.appendChild(item);
+            container.appendChild(serverItem);
         });
         
-        // 서버 삭제 이벤트 리스너 추가
-        document.querySelectorAll('.remove-server').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const server = this.getAttribute('data-server');
-                removeServer(server);
-            });
+        // 모니터링 서버 선택 드롭다운 업데이트
+        monitorSelect.innerHTML = '<option value="">서버 선택</option>';
+        servers.forEach(server => {
+            const option = document.createElement('option');
+            option.value = server;
+            option.textContent = server;
+            monitorSelect.appendChild(option);
         });
+        
+        // 전역 함수로 삭제 기능 추가
+        window.removeServer = function(server) {
+            if (confirm(`"${server}" 서버를 삭제하시겠습니까?`)) {
+                servers = servers.filter(s => s !== server);
+                localStorage.setItem('proxyServers', JSON.stringify(servers));
+                updateServerList();
+                updateSessionServerSelect();
+            }
+        };
     }
     
     /**
@@ -121,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function updateSessionServerSelect() {
         const select = document.getElementById('sessionServerSelect');
-        select.innerHTML = '';
+        select.innerHTML = '<option value="">서버 선택</option>';
         
         servers.forEach(server => {
             const option = document.createElement('option');
@@ -132,28 +139,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * 서버 삭제
-     */
-    function removeServer(server) {
-        if (confirm(`${server} 서버를 삭제하시겠습니까?`)) {
-            servers = servers.filter(s => s !== server);
-            localStorage.setItem('proxyServers', JSON.stringify(servers));
-            updateServerList();
-            updateSessionServerSelect();
-        }
-    }
-    
-    /**
      * 모니터링 시작
      */
     function startMonitoring() {
-        if (servers.length === 0) {
-            alert('서버를 먼저 추가해주세요.');
+        const selectedServer = document.getElementById('monitorServerSelect').value;
+        
+        if (!selectedServer) {
+            alert('서버를 선택해주세요.');
             return;
         }
         
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
         const interval = document.getElementById('interval').value;
         
         fetch('/api/monitoring/start', {
@@ -162,9 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                hosts: servers,
-                username: username,
-                password: password,
+                hosts: [selectedServer],
                 interval: parseInt(interval)
             })
         })
@@ -177,6 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 버튼 상태 변경
                 document.getElementById('startMonitoringBtn').disabled = true;
                 document.getElementById('stopMonitoringBtn').disabled = false;
+                document.getElementById('monitorServerSelect').disabled = true;
                 
                 // 즉시 데이터 조회
                 fetchResourceData();
@@ -206,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 버튼 상태 변경
                 document.getElementById('startMonitoringBtn').disabled = false;
                 document.getElementById('stopMonitoringBtn').disabled = true;
+                document.getElementById('monitorServerSelect').disabled = false;
             } else {
                 alert(`오류: ${data.message}`);
             }
@@ -220,32 +215,21 @@ document.addEventListener('DOMContentLoaded', function() {
      * 리소스 데이터 조회
      */
     function fetchResourceData() {
-        if (!isMonitoring || servers.length === 0) return;
+        const selectedServer = document.getElementById('monitorServerSelect').value;
+        if (!isMonitoring) return;
         
-        // 모든 서버의 데이터를 가져오기 위한 Promise 배열
-        const promises = servers.map(server => 
-            fetch('/api/resources', {
-                headers: {
-                    'X-Monitor-Host': server
-                }
-            })
-            .then(response => response.json())
-            .then(data => ({ [server]: data }))
-            .catch(error => {
-                console.error(`Error fetching data for ${server}:`, error);
-                return { [server]: { error: error.message } };
-            })
-        );
-        
-        // 모든 서버의 데이터를 병합
-        Promise.all(promises)
-            .then(results => {
-                const data = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-                updateResourceTable(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+        fetch('/api/resources', {
+            headers: {
+                'X-Monitor-Host': selectedServer
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateResourceTable(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
     }
     
     /**
@@ -255,39 +239,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const resourceTable = document.getElementById('resourceData');
         resourceTable.innerHTML = '';
         
-        // 서버별 데이터가 없는 경우
-        if (Object.keys(data).length === 0) {
+        if (!data || Object.keys(data).length === 0) {
             const row = document.createElement('tr');
             row.innerHTML = `<td colspan="11" class="text-center">모니터링 데이터가 없습니다. 모니터링을 시작해주세요.</td>`;
             resourceTable.appendChild(row);
             return;
         }
         
-        // 데이터 행 추가
-        for (const host in data) {
-            const resourceData = data[host];
-            const row = document.createElement('tr');
-            
-            // CPU, 메모리 경고 클래스 추가
-            const cpuClass = parseInt(resourceData.cpu) >= cpuThreshold ? 'warning-cpu' : '';
-            const memoryClass = parseInt(resourceData.memory) >= memoryThreshold ? 'warning-memory' : '';
-            
-            row.innerHTML = `
-                <td>${host}</td>
-                <td>${resourceData.date}</td>
-                <td>${resourceData.time}</td>
-                <td class="${cpuClass}">${resourceData.cpu === 'error' ? 'N/A' : resourceData.cpu}</td>
-                <td class="${memoryClass}">${resourceData.memory === 'error' ? 'N/A' : resourceData.memory}</td>
-                <td>${resourceData.uc === 'error' ? 'N/A' : resourceData.uc}</td>
-                <td>${resourceData.http === 'error' ? 'N/A' : resourceData.http}</td>
-                <td>${resourceData.https === 'error' ? 'N/A' : resourceData.https}</td>
-                <td>${resourceData.ftp === 'error' ? 'N/A' : resourceData.ftp}</td>
-                <td>${resourceData.cc === 'error' ? 'N/A' : resourceData.cc}</td>
-                <td>${resourceData.cs === 'error' ? 'N/A' : resourceData.cs}</td>
-            `;
-            
-            resourceTable.appendChild(row);
-        }
+        const row = document.createElement('tr');
+        
+        // CPU, 메모리 경고 클래스 추가
+        const cpuClass = parseInt(data.cpu) >= cpuThreshold ? 'warning-cpu' : '';
+        const memoryClass = parseInt(data.memory) >= memoryThreshold ? 'warning-memory' : '';
+        
+        row.innerHTML = `
+            <td>${document.getElementById('monitorServerSelect').value}</td>
+            <td>${data.date || 'N/A'}</td>
+            <td>${data.time || 'N/A'}</td>
+            <td class="${cpuClass}">${data.cpu === 'error' ? 'N/A' : data.cpu}</td>
+            <td class="${memoryClass}">${data.memory === 'error' ? 'N/A' : data.memory}</td>
+            <td>${data.uc === 'error' ? 'N/A' : data.uc}</td>
+            <td>${data.http === 'error' ? 'N/A' : data.http}</td>
+            <td>${data.https === 'error' ? 'N/A' : data.https}</td>
+            <td>${data.ftp === 'error' ? 'N/A' : data.ftp}</td>
+            <td>${data.cc === 'error' ? 'N/A' : data.cc}</td>
+            <td>${data.cs === 'error' ? 'N/A' : data.cs}</td>
+        `;
+        
+        resourceTable.appendChild(row);
     }
     
     /**
@@ -330,23 +309,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const sessionData = document.getElementById('sessionData');
         sessionData.innerHTML = '';
         
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
             sessionData.innerHTML = '<tr><td colspan="8" class="text-center">세션 데이터가 없습니다.</td></tr>';
             return;
         }
         
         data.forEach(session => {
             const row = document.createElement('tr');
+            
+            // 데이터가 undefined인 경우 'N/A' 표시
+            const creationTime = session['Creation Time'] || 'N/A';
+            const username = session['User Name'] || 'N/A';
+            const clientIP = session['Client IP'] || 'N/A';
+            const proxyIP = session['Proxy IP'] || 'N/A';
+            const url = session['URL'] || 'N/A';
+            const bytesReceived = session['CL Bytes Received'] || 'N/A';
+            const bytesSent = session['CL Bytes Sent'] || 'N/A';
+            const age = session['Age(seconds)'] || 'N/A';
+            
             row.innerHTML = `
-                <td>${session['Creation Time']}</td>
-                <td>${session['Username']}</td>
-                <td>${session['Client IP']}</td>
-                <td>${session['Proxy IP']}</td>
-                <td>${session['URL']}</td>
-                <td>${session['CL Bytes Received']}</td>
-                <td>${session['CL Bytes Sent']}</td>
-                <td>${session['Age(seconds)']}</td>
+                <td data-full-text="${creationTime}">${creationTime}</td>
+                <td data-full-text="${username}">${username}</td>
+                <td data-full-text="${clientIP}">${clientIP}</td>
+                <td data-full-text="${proxyIP}">${proxyIP}</td>
+                <td data-full-text="${url}">${url}</td>
+                <td data-full-text="${bytesReceived}">${bytesReceived}</td>
+                <td data-full-text="${bytesSent}">${bytesSent}</td>
+                <td data-full-text="${age}">${age}</td>
             `;
+            
             sessionData.appendChild(row);
         });
     }
@@ -361,13 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // 새 메뉴 아이템 활성화
-        if (view === 'dashboard') {
-            document.querySelector('.nav-item:nth-child(1) .nav-link').classList.add('active');
-        } else if (view === 'sessionManager') {
-            document.querySelector('.nav-item:nth-child(2) .nav-link').classList.add('active');
-        } else if (view === 'configManager') {
-            document.querySelector('.nav-item:nth-child(3) .nav-link').classList.add('active');
-        }
+        document.querySelector(`[data-view="${view}"]`).classList.add('active');
         
         // 현재 화면 숨기기
         document.getElementById(currentView).classList.add('d-none');
@@ -377,11 +362,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 현재 화면 업데이트
         currentView = view;
-        
-        // 세션 관리 화면으로 전환한 경우, 서버가 있으면 데이터 로드
-        if (view === 'sessionManager' && servers.length > 0) {
-            loadSessionData(true);
-        }
     }
     
     /**

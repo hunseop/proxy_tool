@@ -23,6 +23,19 @@ class SessionManager:
                 header = split_line(lines[1])
                 data = [split_line(line) for line in lines[2:]]
                 session = pd.DataFrame(data, columns=header)
+                
+                # 컬럼명 매핑
+                column_mapping = {
+                    header[0]: 'Creation Time',
+                    header[1]: 'User Name',
+                    header[2]: 'Client IP',
+                    header[3]: 'Proxy IP',
+                    header[4]: 'URL',
+                    header[5]: 'CL Bytes Received',
+                    header[6]: 'CL Bytes Sent',
+                    header[7]: 'Age(seconds)'
+                }
+                session = session.rename(columns=column_mapping)
             except Exception as e:
                 print(f"세션 데이터 처리 중 오류 발생: {e}")
                 session = pd.DataFrame()
