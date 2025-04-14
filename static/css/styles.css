@@ -1,66 +1,88 @@
-/* 전체 레이아웃 */
-body {
-    background-color: #fafafa;
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #64748b;
+    --success-color: #059669;
+    --danger-color: #dc2626;
+    --background-color: #f8fafc;
+    --border-color: #e2e8f0;
+    --text-color: #1e293b;
+    --text-light: #64748b;
 }
 
-.content-wrapper {
-    padding: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
+body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
 }
 
 /* 네비게이션 바 */
 .navbar {
-    background-color: #fff;
-    border-bottom: 1px solid #eee;
-    padding: 1rem 2rem;
+    background-color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    padding: 1rem 1.5rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
 }
 
 .navbar-brand {
     font-weight: 600;
-    color: #333;
+    color: var(--text-color);
 }
 
 .nav-link {
-    color: #666;
+    color: var(--text-light) !important;
     font-weight: 500;
     padding: 0.5rem 1rem;
     transition: color 0.2s;
 }
 
 .nav-link:hover {
-    color: #333;
+    color: var(--primary-color) !important;
 }
 
 .nav-link.active {
-    color: #007bff;
+    color: var(--primary-color) !important;
+    position: relative;
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 1rem;
+    right: 1rem;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+/* 컨텐츠 영역 */
+.content-wrapper {
+    padding: 6rem 2rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 /* 카드 스타일 */
 .card {
-    background: #fff;
+    background: white;
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
 }
 
 .card-body {
     padding: 1.5rem;
-}
-
-/* 모니터링 컨트롤 */
-.monitoring-control {
-    background: #fff;
-    margin-bottom: 1.5rem;
-}
-
-.monitoring-control .form-select,
-.monitoring-control .form-control,
-.monitoring-control .btn {
-    height: 42px;
 }
 
 /* 테이블 스타일 */
@@ -69,21 +91,71 @@ body {
 }
 
 .table th {
+    background-color: var(--background-color);
     font-weight: 600;
-    color: #666;
-    background-color: #fafafa;
-    border-bottom: 2px solid #eee;
+    color: var(--text-color);
     padding: 1rem;
+    white-space: nowrap;
 }
 
 .table td {
     padding: 1rem;
-    color: #333;
-    border-bottom: 1px solid #eee;
+    color: var(--text-light);
+    vertical-align: middle;
 }
 
-.table tbody tr:hover {
-    background-color: #f8f9fa;
+.table-hover tbody tr:hover {
+    background-color: var(--background-color);
+}
+
+/* 모니터링 컨트롤 */
+.monitoring-control {
+    background-color: white;
+    margin-bottom: 1.5rem;
+}
+
+/* 폼 요소 */
+.form-control, .form-select {
+    border-color: var(--border-color);
+    padding: 0.625rem 1rem;
+    font-size: 0.95rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+/* 버튼 스타일 */
+.btn {
+    padding: 0.625rem 1.25rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-danger {
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 /* 세션 테이블 */
@@ -91,123 +163,204 @@ body {
     table-layout: fixed;
 }
 
-.session-table .url-column {
-    width: 300px;
-    max-width: 300px;
-}
-
 .session-table td {
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    position: relative;
-}
-
-.session-table td:hover {
-    overflow: visible;
-    white-space: normal;
-    z-index: 1;
-}
-
-.session-table td:hover::after {
-    content: attr(data-full-text);
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: auto;
-    min-width: 100%;
-    padding: 1rem;
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    word-break: break-all;
-}
-
-/* 경고 표시 */
-.warning-cpu {
-    color: #dc3545;
-    font-weight: 500;
-}
-
-.warning-memory {
-    color: #fd7e14;
-    font-weight: 500;
-}
-
-/* 버튼 스타일 */
-.btn {
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-}
-
-.btn-outline-danger {
-    color: #dc3545;
-    border-color: #dc3545;
-}
-
-.btn-outline-danger:hover {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    color: #fff;
+    white-space: nowrap;
 }
 
 /* 설정 섹션 */
 .setting-section {
-    background: #fafafa;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .setting-title {
-    color: #333;
     font-weight: 600;
     margin-bottom: 1rem;
+    color: var(--text-color);
 }
 
-/* 폼 요소 */
-.form-control,
-.form-select {
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    transition: border-color 0.2s;
+/* 서버/그룹 아이템 스타일 */
+.server-item,
+.server-group-item {
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.form-control:focus,
-.form-select:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.15);
+.server-item:hover,
+.server-group-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-color: #dee2e6;
 }
 
-.input-group-text {
-    background-color: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    color: #666;
+.server-info,
+.group-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.server-info-text,
+.group-info-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.server-address,
+.group-name {
+    font-weight: 500;
+    color: #2c3e50;
+    margin: 0;
+    font-size: 0.95rem;
+    word-break: break-all;
+}
+
+.server-description,
+.group-description {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin: 2px 0 0 0;
+}
+
+.server-actions,
+.group-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    border-radius: 3px;
+    background: none;
+    border: 1px solid;
+}
+
+.edit-btn {
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.edit-btn:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.delete-btn {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.server-groups,
+.group-servers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 3px;
+}
+
+.badge-group {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.badge-server {
+    background-color: #e3f2fd;
+    color: #0d6efd;
+}
+
+/* 스크롤바 스타일링 */
+.scrollable-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scrollable-list::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 2px;
+}
+
+.scrollable-list::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* 서버/그룹 목록 컨테이너 */
+.server-list-container,
+.server-group-list-container {
+    max-height: 350px;
+    overflow: hidden;
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+.scrollable-list {
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+/* 경고 스타일 */
+.warning-cpu {
+    color: var(--danger-color) !important;
+    font-weight: 600;
+}
+
+.warning-memory {
+    color: var(--danger-color) !important;
+    font-weight: 600;
+}
+
+/* 로딩 애니메이션 */
+.loading {
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 모달 */
 .modal-content {
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border-radius: 0.75rem;
 }
 
 .modal-header {
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-color);
     padding: 1.25rem 1.5rem;
 }
 
@@ -216,21 +369,183 @@ body {
 }
 
 .modal-footer {
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border-color);
     padding: 1.25rem 1.5rem;
 }
 
-/* 반응형 조정 */
+/* 서버 선택 드롭다운 */
+.server-select-dropdown {
+    min-width: 300px !important;
+}
+
+.server-groups-list {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+.server-search {
+    width: 150px;
+}
+
+.server-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.server-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.server-list::-webkit-scrollbar-track {
+    background: var(--background-color);
+    border-radius: 3px;
+}
+
+.server-list::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 3px;
+}
+
+.server-item-checkbox {
+    margin-bottom: 0.5rem;
+}
+
+.server-group-label {
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0.5rem 0;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* 반응형 디자인 */
 @media (max-width: 768px) {
     .content-wrapper {
+        padding: 5rem 1rem 1rem;
+    }
+    
+    .card-body {
         padding: 1rem;
     }
     
-    .monitoring-control .row {
-        gap: 1rem;
+    .table td, .table th {
+        padding: 0.75rem;
     }
     
     .btn {
-        width: 100%;
+        padding: 0.5rem 1rem;
     }
+    
+    .server-select-dropdown {
+        width: 100% !important;
+    }
+    
+    .server-search {
+        width: 120px;
+    }
+}
+
+/* 서버 선택 드롭다운 스타일 */
+.server-select-dropdown .dropdown-menu {
+    min-width: 320px;
+    max-width: 400px;
+}
+
+.server-groups {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.server-search input {
+    width: 100%;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.server-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.server-list {
+    padding-right: 0.5rem;
+}
+
+.server-item-checkbox {
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.server-item-checkbox:hover {
+    background-color: var(--hover-bg);
+    border-radius: 4px;
+}
+
+/* 스크롤바 스타일링 */
+.server-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.server-list-container::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 3px;
+}
+
+.server-list-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.server-list-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* 서버 그룹 관리 스타일 */
+.server-group-item {
+    background-color: var(--background-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+}
+
+.server-group-item .server-list {
+    margin-left: 0.5rem;
+}
+
+.server-group-item .server-list .text-muted {
+    padding: 0.25rem 0;
+}
+
+.server-list-editor {
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: var(--background-color);
+}
+
+.server-list-editor .input-group {
+    margin-bottom: 0.5rem;
+}
+
+.server-list-editor .input-group:last-child {
+    margin-bottom: 0;
+}
+
+.server-groups-management,
+.custom-servers-management {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.server-groups-management h6,
+.custom-servers-management h6 {
+    color: var(--text-color);
+    font-weight: 600;
 } 

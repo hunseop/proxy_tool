@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import json
 import os
-from proxy_monitor_core import ResourceMonitor, SessionManager, Config
+from proxy_monitor_core import ResourceMonitor, SessionManager, Config, server_group
 
 app = Flask(__name__)
 
@@ -16,6 +16,9 @@ DEFAULT_CONFIG = {
     'cpu_threshold': Config.CPU_THRESHOLD,
     'memory_threshold': Config.MEMORY_THRESHOLD
 }
+
+# 서버 그룹 API 등록
+app.register_blueprint(server_group.bp)
 
 def load_config():
     if os.path.exists(CONFIG_FILE):
