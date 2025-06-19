@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from .models import Session, Server, ServerGroup
+from ppat_db.monitor_models import Session, Server, ServerGroup
 from sqlalchemy.exc import IntegrityError
 
 bp = Blueprint('server_group', __name__, url_prefix='/api')

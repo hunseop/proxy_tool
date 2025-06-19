@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Column, Integer, String, Text, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from .policy_manager import PolicyManager
+from proxy_module.policy_manager import PolicyManager
 
 Base = declarative_base()
 

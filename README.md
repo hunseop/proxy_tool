@@ -104,6 +104,14 @@ proxy-monitoring-system/
 │   ├── session.py            # 세션 관리
 │   ├── ssh.py                # SSH 클라이언트
 │   └── utils.py              # 유틸리티 함수
+├── proxy_module/            # 정책 파싱 모듈
+│   ├── condition_parser.py
+│   ├── lists_parser.py
+│   ├── policy_manager.py
+│   └── policy_parser.py
+├── ppat_db/                 # 공통 데이터베이스 스키마
+│   ├── monitor_models.py
+│   └── policy_db.py
 ├── static/                   # 정적 파일
 │   ├── css/
 │   │   └── styles.css
@@ -120,6 +128,8 @@ proxy-monitoring-system/
 `PolicyParser`와 `ListsParser`는 각각 정책과 객체 목록을 해석합니다.
 새롭게 추가된 `PolicyManager`를 사용하면 두 파서의 결과를 연결하여
 정책 조건에서 참조하는 리스트 항목을 손쉽게 확인할 수 있습니다.
+자원 사용률 조회 기능은 `proxy_monitor_core` 모듈에 따로 구현되어 있으며,
+두 모듈에서 사용하는 데이터베이스 스키마는 `ppat_db` 패키지에서 관리합니다.
 
 ### 샘플 정책 데이터 저장
 
@@ -127,7 +137,7 @@ proxy-monitoring-system/
 DB에 저장할 수 있습니다.
 
 ```bash
-python -m proxy_module.policy_db sample_data/policy_sample.json sample_data/lists_sample.json
+python -m ppat_db.policy_db sample_data/policy_sample.json sample_data/lists_sample.json
 ```
 
 ## 문제 해결
