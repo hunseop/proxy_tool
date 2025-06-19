@@ -1,2 +1,0 @@
-# 로컬 패키지만 사용
-./proxy_monitor_core/ 
