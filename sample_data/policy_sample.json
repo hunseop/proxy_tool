@@ -1,0 +1,36 @@
+{
+    "libraryContent": {
+        "ruleGroup": {
+            "@id": "g1",
+            "@name": "Group1",
+            "rules": {
+                "rule": {
+                    "@id": "r1",
+                    "@name": "Rule1",
+                    "condition": {
+                        "expressions": {
+                            "conditionExpression": {
+                                "@prefix": "URL",
+                                "@operatorId": "equals",
+                                "propertyInstance": {
+                                    "@propertyId": "URL.Host",
+                                    "parameters": {
+                                        "entry": {
+                                            "string": "domain",
+                                            "parameter": {
+                                                "@valueType": "value",
+                                                "value": {
+                                                    "listValue": {"@id": "list1"}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

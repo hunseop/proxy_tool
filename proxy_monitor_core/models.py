@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Text, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -43,6 +43,27 @@ class ServerGroup(Base):
             'description': self.description,
             'servers': [server.address for server in self.servers]
         }
+
+
+class PolicyGroup(Base):
+    __tablename__ = 'policy_groups'
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(String(100), unique=True)
+    name = Column(String(200))
+    path = Column(String(500))
+    raw = Column(Text)
+
+
+class PolicyRule(Base):
+    __tablename__ = 'policy_rules'
+
+    id = Column(Integer, primary_key=True)
+    rule_id = Column(String(100), unique=True)
+    name = Column(String(200))
+    group_path = Column(String(500))
+    raw = Column(Text)
+    lists_resolved = Column(Text)
 
 # 데이터베이스 연결 설정
 engine = create_engine('sqlite:///proxy_monitor.db')

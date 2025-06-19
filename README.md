@@ -19,8 +19,8 @@
 
 1. 소스 코드 다운로드
 ```bash
-git clone https://github.com/yourusername/proxy-monitoring-system.git
-cd proxy-monitoring-system
+git clone <레포지토리 주소>
+cd PPAT
 ```
 
 2. 필요한 패키지 설치
@@ -36,6 +36,13 @@ python app.py
 4. 웹 브라우저에서 접속
 ```
 http://localhost:5000
+```
+
+## 테스트 실행
+
+의존성 설치 후 다음 명령어로 테스트를 수행할 수 있습니다.
+```bash
+pytest
 ```
 
 ## 설정 방법
@@ -114,6 +121,15 @@ proxy-monitoring-system/
 새롭게 추가된 `PolicyManager`를 사용하면 두 파서의 결과를 연결하여
 정책 조건에서 참조하는 리스트 항목을 손쉽게 확인할 수 있습니다.
 
+### 샘플 정책 데이터 저장
+
+`sample_data` 디렉터리에 정책과 리스트 샘플 JSON이 포함되어 있습니다. 다음 명령으로
+DB에 저장할 수 있습니다.
+
+```bash
+python -m proxy_module.policy_db sample_data/policy_sample.json sample_data/lists_sample.json
+```
+
 ## 문제 해결
 
 * **SSH 연결 오류**: SSH 계정, 비밀번호, 포트가 올바른지 확인
@@ -122,4 +138,4 @@ proxy-monitoring-system/
 
 ## 라이선스
 
-이 프로젝트는 MIT 라이선스 하에 있습니다. 
+이 프로젝트는 MIT 라이선스 하에 있습니다.
