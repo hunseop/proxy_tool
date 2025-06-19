@@ -1,14 +1,44 @@
-"""정책 데이터를 DB에 저장하는 도구 모듈."""
+"""Policy parsing results database utilities."""
 
 import json
 from typing import Any
 
-from proxy_monitor_core.models import Session, PolicyGroup, PolicyRule
+from sqlalchemy import Column, Integer, String, Text, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
 from .policy_manager import PolicyManager
+
+Base = declarative_base()
+
+
+class PolicyGroup(Base):
+    __tablename__ = "policy_groups"
+
+    id = Column(Integer, primary_key=True)
+    group_id = Column(String(100), unique=True)
+    name = Column(String(200))
+    path = Column(String(500))
+    raw = Column(Text)
+
+
+class PolicyRule(Base):
+    __tablename__ = "policy_rules"
+
+    id = Column(Integer, primary_key=True)
+    rule_id = Column(String(100), unique=True)
+    name = Column(String(200))
+    group_path = Column(String(500))
+    raw = Column(Text)
+    lists_resolved = Column(Text)
+
+
+engine = create_engine("sqlite:///policy.db")
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
 
 
 def save_policy_to_db(policy_source: Any, list_source: Any, *, from_xml: bool = False) -> None:
-    """PolicyManager를 사용해 정책을 파싱하고 DB에 저장한다."""
+    """Parse policy and list data then store to the local DB."""
     manager = PolicyManager(policy_source, list_source, from_xml=from_xml)
     manager.parse_lists()
     groups, rules = manager.parse_policy()
@@ -37,14 +67,15 @@ def save_policy_to_db(policy_source: Any, list_source: Any, *, from_xml: bool = 
 
 
 if __name__ == "__main__":
-    import json
     import sys
+
     if len(sys.argv) < 3:
         print("Usage: policy_db.py <policy_json> <lists_json>")
-        sys.exit(1)
+        raise SystemExit(1)
+
     with open(sys.argv[1], "r", encoding="utf-8") as f:
         policy = json.load(f)
     with open(sys.argv[2], "r", encoding="utf-8") as f:
         lists = json.load(f)
-    save_policy_to_db(policy, lists)
 
+    save_policy_to_db(policy, lists)
