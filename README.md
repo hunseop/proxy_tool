@@ -107,6 +107,13 @@ proxy-monitoring-system/
 └── requirements.txt          # 의존성 패키지
 ```
 
+## 정책 파싱 모듈
+
+`proxy_module` 디렉터리에는 SWG 정책을 파싱하기 위한 모듈이 포함되어 있습니다.
+`PolicyParser`와 `ListsParser`는 각각 정책과 객체 목록을 해석합니다.
+새롭게 추가된 `PolicyManager`를 사용하면 두 파서의 결과를 연결하여
+정책 조건에서 참조하는 리스트 항목을 손쉽게 확인할 수 있습니다.
+
 ## 문제 해결
 
 * **SSH 연결 오류**: SSH 계정, 비밀번호, 포트가 올바른지 확인
