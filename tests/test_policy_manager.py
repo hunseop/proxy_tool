@@ -5,7 +5,7 @@ sys.modules.setdefault("xmltodict", types.ModuleType("xmltodict")).parse = lambd
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
-from proxy_module.policy_manager import PolicyManager
+from policy_module.policy_manager import PolicyManager
 
 lists_data = {
     "libraryContent": {

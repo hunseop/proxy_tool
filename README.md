@@ -97,20 +97,22 @@ pytest
 proxy-monitoring-system/
 ├── app.py                    # Flask 애플리케이션
 ├── config.json               # 설정 파일
-├── proxy_monitor_core/       # 핵심 모니터링 모듈
+├── monitor_module/          # 핵심 모니터링 모듈
 │   ├── __init__.py
 │   ├── config.py             # 기본 설정
 │   ├── resource.py           # 리소스 모니터링
 │   ├── session.py            # 세션 관리
-│   ├── ssh.py                # SSH 클라이언트
 │   └── utils.py              # 유틸리티 함수
-├── proxy_module/            # 정책 파싱 모듈
+├── policy_module/           # 정책 파싱 모듈
 │   ├── condition_parser.py
 │   ├── lists_parser.py
 │   ├── policy_manager.py
 │   └── policy_parser.py
+├── device_clients/          # 장비 연동 모듈
+│   ├── __init__.py
+│   ├── ssh.py                # SSH 클라이언트
+│   └── skyhigh_client.py     # Skyhigh SWG 연동
 ├── ppat_db/                 # 공통 데이터베이스 스키마
-│   ├── monitor_models.py
 │   └── policy_db.py
 ├── static/                   # 정적 파일
 │   ├── css/
@@ -124,11 +126,11 @@ proxy-monitoring-system/
 
 ## 정책 파싱 모듈
 
-`proxy_module` 디렉터리에는 SWG 정책을 파싱하기 위한 모듈이 포함되어 있습니다.
+`policy_module` 디렉터리에는 SWG 정책을 파싱하기 위한 모듈이 포함되어 있습니다.
 `PolicyParser`와 `ListsParser`는 각각 정책과 객체 목록을 해석합니다.
 새롭게 추가된 `PolicyManager`를 사용하면 두 파서의 결과를 연결하여
 정책 조건에서 참조하는 리스트 항목을 손쉽게 확인할 수 있습니다.
-자원 사용률 조회 기능은 `proxy_monitor_core` 모듈에 따로 구현되어 있으며,
+자원 사용률 조회 기능은 `monitor_module` 모듈에 따로 구현되어 있으며,
 두 모듈에서 사용하는 데이터베이스 스키마는 `ppat_db` 패키지에서 관리합니다.
 
 ### 샘플 정책 데이터 저장

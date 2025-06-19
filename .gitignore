@@ -87,5 +87,4 @@ local_settings.py
 # System Files
 .DS_Store
 Thumbs.db 
-proxy_monitor_core/__pycache__/server_group.cpython-313.pyc
-proxy_monitor_core/__pycache__/models.cpython-313.pyc
+monitor_module/__pycache__/
