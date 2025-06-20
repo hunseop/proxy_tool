@@ -35,9 +35,22 @@ class ListsParser:
 
             # 리스트인 경우만 처리
             if isinstance(entries, list):
-                for entry in entries:
-                    if isinstance(entry, dict):
-                        row = {
+                if entries:
+                    for entry in entries:
+                        if isinstance(entry, dict):
+                            row = {
+                                "list_name": list_name,
+                                "list_id": list_id,
+                                "list_type_id": list_type_id,
+                                "list_classifier": list_classifier,
+                                "list_description": list_description,
+                                **entry,
+                            }
+                            self.lists_records.append(row)
+                else:
+                    # 엔트리가 없더라도 리스트 정보는 저장
+                    self.lists_records.append(
+                        {
                             "list_name": list_name,
                             "list_id": list_id,
                             "list_type_id": list_type_id,
@@ -46,7 +59,7 @@ class ListsParser:
                             **entry
                         }
                         self.lists_records.append(row)
-                
+               
             elif isinstance(entries, dict):
                 row = {
                     "list_name": list_name,
