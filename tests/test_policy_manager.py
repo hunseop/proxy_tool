@@ -111,7 +111,6 @@ def test_resolve_lists_from_combined():
     values = [e.get("value") for e in rules[0]["lists_resolved"]]
     assert values == ["example.com", "example.org"]
 
-
 def test_empty_list_entries():
     pm = PolicyManager(policy_data, lists_data_empty, from_xml=False)
     records = pm.parse_lists()

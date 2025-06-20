@@ -56,9 +56,10 @@ class ListsParser:
                             "list_type_id": list_type_id,
                             "list_classifier": list_classifier,
                             "list_description": list_description,
+                            **entry
                         }
-                    )
-
+                        self.lists_records.append(row)
+               
             elif isinstance(entries, dict):
                 row = {
                     "list_name": list_name,
