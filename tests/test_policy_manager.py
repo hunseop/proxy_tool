@@ -5,7 +5,7 @@ sys.modules.setdefault("xmltodict", types.ModuleType("xmltodict")).parse = lambd
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
-from proxy_module.policy_manager import PolicyManager
+from policy_module.policy_manager import PolicyManager
 
 lists_data = {
     "libraryContent": {
@@ -68,6 +68,32 @@ policy_data = {
     }
 }
 
+combined_data = {
+    "libraryContent": {
+        "ruleGroup": policy_data["libraryContent"]["ruleGroup"],
+        "lists": lists_data["libraryContent"]["lists"],
+    }
+}
+
+lists_data_empty = {
+    "libraryContent": {
+        "lists": {
+            "entry": [
+                {
+                    "list": {
+                        "@name": "Test List",
+                        "@id": "list1",
+                        "@typeId": "A",
+                        "@classifier": "string",
+                        "description": "desc",
+                        "content": {"listEntry": []},
+                    }
+                }
+            ]
+        }
+    }
+}
+
 def test_resolve_lists():
     pm = PolicyManager(policy_data, lists_data, from_xml=False)
     pm.parse_lists()
@@ -75,3 +101,21 @@ def test_resolve_lists():
     assert rules and isinstance(rules[0].get("lists_resolved"), list)
     values = [entry.get("value") for entry in rules[0]["lists_resolved"]]
     assert values == ["example.com", "example.org"]
+
+
+def test_resolve_lists_from_combined():
+    pm = PolicyManager(combined_data, from_xml=False)
+    pm.parse_lists()
+    groups, rules = pm.parse_policy()
+    assert rules and isinstance(rules[0]["lists_resolved"], list)
+    values = [e.get("value") for e in rules[0]["lists_resolved"]]
+    assert values == ["example.com", "example.org"]
+
+
+def test_empty_list_entries():
+    pm = PolicyManager(policy_data, lists_data_empty, from_xml=False)
+    records = pm.parse_lists()
+    assert len(records) == 1
+    assert records[0]["list_id"] == "list1"
+    groups, rules = pm.parse_policy()
+    assert rules[0]["lists_resolved"][0]["list_id"] == "list1"
