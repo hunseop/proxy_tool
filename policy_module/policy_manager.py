@@ -31,9 +31,15 @@ class ListDatabase:
 class PolicyManager:
     """Combine policy parsing with list resolution."""
 
-    def __init__(self, policy_source: Any, list_source: Any, *, from_xml: bool = False) -> None:
+    def __init__(
+        self,
+        policy_source: Any,
+        list_source: Any | None = None,
+        *,
+        from_xml: bool = False,
+    ) -> None:
         self.policy_source = policy_source
-        self.list_source = list_source
+        self.list_source = list_source if list_source is not None else policy_source
         self.from_xml = from_xml
         self.list_db = ListDatabase()
         self.policy_parser = PolicyParser(policy_source, from_xml=from_xml)
