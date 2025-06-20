@@ -75,6 +75,25 @@ combined_data = {
     }
 }
 
+lists_data_empty = {
+    "libraryContent": {
+        "lists": {
+            "entry": [
+                {
+                    "list": {
+                        "@name": "Test List",
+                        "@id": "list1",
+                        "@typeId": "A",
+                        "@classifier": "string",
+                        "description": "desc",
+                        "content": {"listEntry": []},
+                    }
+                }
+            ]
+        }
+    }
+}
+
 def test_resolve_lists():
     pm = PolicyManager(policy_data, lists_data, from_xml=False)
     pm.parse_lists()
@@ -91,3 +110,11 @@ def test_resolve_lists_from_combined():
     assert rules and isinstance(rules[0]["lists_resolved"], list)
     values = [e.get("value") for e in rules[0]["lists_resolved"]]
     assert values == ["example.com", "example.org"]
+
+def test_empty_list_entries():
+    pm = PolicyManager(policy_data, lists_data_empty, from_xml=False)
+    records = pm.parse_lists()
+    assert len(records) == 1
+    assert records[0]["list_id"] == "list1"
+    groups, rules = pm.parse_policy()
+    assert rules[0]["lists_resolved"][0]["list_id"] == "list1"
