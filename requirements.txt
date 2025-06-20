@@ -1,0 +1,10 @@
+pandas
+xmltodict
+openpyxl
+requests
+urllib3
+pysnmp
+paramiko
+flask
+SQLAlchemy
+pytest
