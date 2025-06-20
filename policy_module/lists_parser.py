@@ -58,7 +58,8 @@ class ListsParser:
                             "list_description": list_description,
                             **entry
                         }
-                        self.lists_records.append(row)
+                    )
+                    self.lists_records.append(row)
                
             elif isinstance(entries, dict):
                 row = {
