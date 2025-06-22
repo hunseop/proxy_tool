@@ -135,12 +135,14 @@ proxy-monitoring-system/
 
 ### 샘플 정책 데이터 저장
 
-`sample_data` 디렉터리에는 정책과 리스트가 함께 들어 있는 `policy_combined.json` 파일이 제공됩니다.
+`sample_data` 디렉터리에는 정책과 리스트가 함께 들어 있는 `policy_combined.json` 파일과 추가 규칙을 포함한 `policy_combined_extended.json` 두 가지 예제가 제공됩니다.
 다음 명령으로 DB에 저장해 볼 수 있습니다.
 
 ```bash
 python -m ppat_db.policy_db sample_data/policy_combined.json
 ```
+위 명령을 실행하면 정책 그룹과 룰뿐 아니라 객체 목록이 `policy_lists`
+테이블에 저장되며, 각 룰의 조건은 `policy_conditions` 테이블을 통해 관리됩니다.
 
 ## 문제 해결
 
