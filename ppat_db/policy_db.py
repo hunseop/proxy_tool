@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-from sqlalchemy import Column, Integer, String, Text, create_engine
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from policy_module.policy_manager import PolicyManager
@@ -29,7 +29,41 @@ class PolicyRule(Base):
     name = Column(String(200))
     group_path = Column(String(500))
     raw = Column(Text)
-    lists_resolved = Column(Text)
+
+
+class PolicyCondition(Base):
+    __tablename__ = "policy_conditions"
+
+    id = Column(Integer, primary_key=True)
+    rule_id = Column(String(100))
+    index = Column(Integer)
+    prefix = Column(String(50))
+    property = Column(String(200))
+    operator = Column(String(100))
+    values = Column(Text)
+    result = Column(String(100))
+    raw = Column(Text)
+
+
+class ConditionListMap(Base):
+    __tablename__ = "condition_list_map"
+
+    id = Column(Integer, primary_key=True)
+    condition_id = Column(Integer, ForeignKey("policy_conditions.id"))
+    list_id = Column(String(100))
+
+
+class PolicyList(Base):
+    __tablename__ = "policy_lists"
+
+    id = Column(Integer, primary_key=True)
+    list_id = Column(String(100))
+    entry_id = Column(String(100))
+    value = Column(Text)
+    name = Column(String(200))
+    type_id = Column(String(100))
+    classifier = Column(String(100))
+    description = Column(Text)
 
 
 engine = create_engine("sqlite:///policy.db")
@@ -45,10 +79,22 @@ def save_policy_to_db(
 ) -> None:
     """Parse policy and list data then store to the local DB."""
     manager = PolicyManager(policy_source, list_source, from_xml=from_xml)
-    manager.parse_lists()
+    list_records = manager.parse_lists()
     groups, rules = manager.parse_policy()
 
     with Session() as session:
+        for l in list_records:
+            rec = PolicyList(
+                list_id=l.get("list_id"),
+                entry_id=l.get("@id"),
+                value=l.get("value"),
+                name=l.get("list_name"),
+                type_id=l.get("list_type_id"),
+                classifier=l.get("list_classifier"),
+                description=l.get("list_description"),
+            )
+            session.add(rec)
+
         for g in groups:
             record = PolicyGroup(
                 group_id=g.get("id"),
@@ -58,15 +104,45 @@ def save_policy_to_db(
             )
             session.merge(record)
 
+        current_rule_id: str | None = None
+        condition_index = 0
         for r in rules:
-            record = PolicyRule(
-                rule_id=r.get("id"),
-                name=r.get("name"),
-                group_path=r.get("group_path"),
-                raw=json.dumps(r, ensure_ascii=False),
-                lists_resolved=json.dumps(r.get("lists_resolved"), ensure_ascii=False),
+            if r.get("id"):
+                current_rule_id = r.get("id")
+                record = PolicyRule(
+                    rule_id=current_rule_id,
+                    name=r.get("name"),
+                    group_path=r.get("group_path"),
+                    raw=json.dumps(r, ensure_ascii=False),
+                )
+                session.merge(record)
+                condition_index = 0
+            if current_rule_id is None:
+                continue
+            condition_index += 1
+            cond = r.get("condition_raw") or {}
+            cond_record = PolicyCondition(
+                rule_id=current_rule_id,
+                index=condition_index,
+                prefix=cond.get("prefix"),
+                property=cond.get("property"),
+                operator=cond.get("operator"),
+                values=json.dumps(cond.get("property_values"), ensure_ascii=False) if cond.get("property_values") is not None else None,
+                result=cond.get("expression_value"),
+                raw=json.dumps(cond, ensure_ascii=False),
             )
-            session.merge(record)
+            session.add(cond_record)
+            session.flush()
+            values = cond.get("property_values")
+            list_ids: list[str] = []
+            if isinstance(values, str) and values in manager.list_db.lists:
+                list_ids.append(values)
+            elif isinstance(values, (list, tuple)):
+                for v in values:
+                    if isinstance(v, str) and v in manager.list_db.lists:
+                        list_ids.append(v)
+            for lid in list_ids:
+                session.add(ConditionListMap(condition_id=cond_record.id, list_id=lid))
 
         session.commit()
 
