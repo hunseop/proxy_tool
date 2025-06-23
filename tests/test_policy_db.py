@@ -11,6 +11,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import ppat_db.policy_db as pdb
+import json
+import os
 
 
 def setup_function(_):
@@ -94,9 +96,31 @@ def test_save_policy_with_group_conditions():
         r_cond = conds[1]
 
         assert g_cond.group_id == "g1"
+        assert g_cond.parent_id is None
         assert g_cond.open_bracket == 1
         assert g_cond.close_bracket == 0
 
         assert r_cond.rule_id == "r1"
+        assert r_cond.parent_id is None
         assert r_cond.open_bracket == 0
         assert r_cond.close_bracket == 1
+
+
+def test_save_policy_configurations():
+    path = os.path.join(os.path.dirname(__file__), "..", "sample_data", "policy_with_configurations.json")
+    with open(path, "r", encoding="utf-8") as f:
+        policy = json.load(f)
+
+    pdb.save_policy_to_db(policy)
+
+    with pdb.Session() as session:
+        configs = session.query(pdb.PolicyConfiguration).all()
+        props = session.query(pdb.ConfigurationProperty).all()
+        assert len(configs) == 1
+        assert len(props) == 1
+        conf = configs[0]
+        prop = props[0]
+        assert conf.configuration_id == "conf1"
+        assert conf.name == "Sample Config"
+        assert prop.key == "prop1"
+        assert prop.value == "val1"
