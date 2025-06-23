@@ -25,7 +25,7 @@ def test_parse_extended_policy():
     groups, rules = pm.parse_policy()
 
     assert len(lists) == 4
-    assert len(groups) == 0
+    assert len(groups) == 3
     assert len([r for r in rules if r.get("id")]) == 3
     r3_conditions = [r for r in rules if r.get("id") == "r3"]
     assert len(r3_conditions) == 1

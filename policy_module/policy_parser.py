@@ -36,8 +36,11 @@ class PolicyParser:
                     parsed_conditions = self.parse_condition(obj.get("condition", {}))
                     if not isinstance(parsed_conditions, list):
                         parsed_conditions = [parsed_conditions]
-                    
+                    if not parsed_conditions:
+                        parsed_conditions = [None]
+
                     for idx, cond in enumerate(parsed_conditions):
+                        cond = cond or {}
                         values = cond.get("property_values")
                         if isinstance(values, (list, tuple)):
                             condition_values = ", ".join(values)

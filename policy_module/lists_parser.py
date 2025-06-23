@@ -12,6 +12,14 @@ class ListsParser:
             raise ValueError("Invalid data source provided. Must be dict or XML string.")
 
         self.lists_records = []
+
+    @staticmethod
+    def ensure_list(value):
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        return [value]
     
     def safe_get(self, d, keys, default=None):
         """중첩 dict에서 안전하게 값 추출"""
@@ -23,7 +31,10 @@ class ListsParser:
         return d if d is not None else default
     
     def parse(self):
-        for item in self.data.get("libraryContent", {}).get("lists", {}).get("entry", []):
+        entries = self.data.get("libraryContent", {}).get("lists", {}).get("entry")
+        for item in self.ensure_list(entries):
+            if not isinstance(item, dict):
+                continue
             list_in_lists = item.get("list", {})
             list_name = list_in_lists.get("@name", None)
             list_id = list_in_lists.get("@id", None)
@@ -32,11 +43,12 @@ class ListsParser:
             list_description = list_in_lists.get("description", None)
 
             entries = self.safe_get(item, ["list", "content", "listEntry"], [])
+            entries_list = self.ensure_list(entries)
 
             # 리스트인 경우만 처리
-            if isinstance(entries, list):
-                if entries:
-                    for entry in entries:
+            if isinstance(entries_list, list):
+                if entries_list:
+                    for entry in entries_list:
                         if isinstance(entry, dict):
                             row = {
                                 "list_name": list_name,
@@ -58,7 +70,7 @@ class ListsParser:
                             "list_description": list_description,
                         }
                     )
-               
+
             elif isinstance(entries, dict):
                 row = {
                     "list_name": list_name,

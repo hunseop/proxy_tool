@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from .lists_parser import ListsParser
 from .policy_parser import PolicyParser
+from .configurations_parser import ConfigurationsParser
 
 
 class ListDatabase:
@@ -49,6 +50,10 @@ class PolicyManager:
         records = parser.parse()
         self.list_db.load(records)
         return records
+
+    def parse_configurations(self) -> List[Dict[str, Any]]:
+        parser = ConfigurationsParser(self.policy_source, from_xml=self.from_xml)
+        return parser.parse()
 
     def parse_policy(self) -> tuple:
         rulegroups, rules = self.policy_parser.parse()
