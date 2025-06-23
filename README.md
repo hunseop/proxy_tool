@@ -142,7 +142,10 @@ proxy-monitoring-system/
 python -m ppat_db.policy_db sample_data/policy_combined.json
 ```
 위 명령을 실행하면 정책 그룹과 룰뿐 아니라 객체 목록이 `policy_lists`
-테이블에 저장되며, 각 룰의 조건은 `policy_conditions` 테이블을 통해 관리됩니다.
+테이블에 저장되며, 그룹과 룰의 모든 조건은 `policy_conditions` 테이블에서
+확인할 수 있습니다. 조건에는 괄호 개수를 나타내는 `open_bracket`,
+`close_bracket` 컬럼이 포함됩니다.
+보다 자세한 스키마 설명은 `docs/db_schema.md` 파일을 참고하세요.
 
 ## 문제 해결
 

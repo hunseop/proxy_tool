@@ -76,12 +76,20 @@ class ConditionParser:
             }
         elif "propertyInstance" in value:
             nested_prop = value["propertyInstance"]
-            nested_params = self.parse_property_parameters(nested_prop.get("parameters", {}))
+            nested_params = self.parse_property_parameters(
+                nested_prop.get("parameters", {})
+            )
+            nested_param = (
+                self.parse_single_property_parameter(nested_prop["parameter"])
+                if "parameter" in nested_prop
+                else None
+            )
             return {
                 "mode": "nested_property",
                 "value_type": value_type,
                 "property": nested_prop.get("@propertyId"),
-                "parameters": nested_params
+                "parameters": nested_params,
+                "parameter": nested_param,
             }
         else:
             return {
@@ -102,13 +110,21 @@ class ConditionParser:
 
             if "propertyInstance" in value:
                 nested_prop = value["propertyInstance"]
-                nested_params = self.parse_property_parameters(nested_prop.get("parameters", {}))
+                nested_params = self.parse_property_parameters(
+                    nested_prop.get("parameters", {})
+                )
+                nested_param = (
+                    self.parse_single_property_parameter(nested_prop["parameter"])
+                    if "parameter" in nested_prop
+                    else None
+                )
                 results.append({
                     "key": key,
                     "value_type": value_type,
                     "value_kind": "nested_property",
                     "property": nested_prop.get("@propertyId"),
-                    "parameters": nested_params
+                    "parameters": nested_params,
+                    "parameter": nested_param,
                 })
             elif "stringValue" in value:
                 sv = value["stringValue"]
@@ -151,7 +167,14 @@ class ConditionParser:
                 return {
                     "mode": "nested_property",
                     "property": nested_prop.get("@propertyId"),
-                    "parameters": self.parse_property_parameters(nested_prop.get("parameters", {}))
+                    "parameters": self.parse_property_parameters(
+                        nested_prop.get("parameters", {})
+                    ),
+                    "parameter": self.parse_single_property_parameter(
+                        nested_prop["parameter"]
+                    )
+                    if "parameter" in nested_prop
+                    else None,
                 }
             if "stringValue" in value:
                 sv = value["stringValue"]
