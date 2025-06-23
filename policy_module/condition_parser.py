@@ -124,11 +124,13 @@ class ConditionParser:
                     if "parameter" in nested_prop
                     else None
                 )
+
                 attributes = {
                     k.lstrip("@"): v
                     for k, v in nested_prop.items()
                     if k.startswith("@") and k not in {"@propertyId"}
                 }
+
                 results.append({
                     "key": key,
                     "value_type": value_type,
