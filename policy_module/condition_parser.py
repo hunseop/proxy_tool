@@ -14,13 +14,42 @@ class ConditionParser:
         return [value]
 
     def parse_condition(self, condition: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Parse the expressions of a condition into a list of rows.
+
+        The resulting rows include ``index`` and ``parent_index`` to allow
+        reconstruction of nested boolean logic. ``index`` starts at ``1`` for
+        each condition and ``parent_index`` refers to the ``index`` of the
+        expression that opened the current bracket scope.
+        """
+
         if not condition:
             return []
-        expressions_container = condition.get("expressions")
-        if not isinstance(expressions_container, dict):
+
+        container = condition.get("expressions")
+        if not isinstance(container, dict):
             return []
-        expressions = self.ensure_list(expressions_container.get("conditionExpression"))
-        return [self.parse_expression(expr) for expr in expressions if isinstance(expr, dict)]
+
+        raw_exprs = self.ensure_list(container.get("conditionExpression"))
+
+        rows: List[Dict[str, Any]] = []
+        stack: List[int] = []
+
+        for raw in raw_exprs:
+            if not isinstance(raw, dict):
+                continue
+            row = self.parse_expression(raw)
+            index = len(rows) + 1
+            row["index"] = index
+            row["parent_index"] = stack[-1] if stack else None
+            rows.append(row)
+
+            for _ in range(row.get("open_bracket", 0)):
+                stack.append(index)
+            for _ in range(row.get("close_bracket", 0)):
+                if stack:
+                    stack.pop()
+
+        return rows
     
     def parse_expression(self, expr: Dict[str, Any]) -> Dict[str, Any]:
         prop_instance = expr.get("propertyInstance", {})
@@ -40,6 +69,12 @@ class ConditionParser:
             for v in property_parameters
             if v["value_kind"] in ("string", "list")
         ]
+
+        if expression_parameter and expression_parameter.get("mode") == "value":
+            if expression_parameter.get("value_kind") == "string":
+                values.append(expression_parameter.get("value"))
+            elif expression_parameter.get("value_kind") == "list":
+                values.append(expression_parameter.get("list_id"))
 
         return {
             "prefix": expr.get("@prefix"),
@@ -109,6 +144,13 @@ class ConditionParser:
         results = []
 
         for entry in entries:
+            if isinstance(entry, str):
+                # bare string entry
+                results.append({"key": None, "value_type": None, "value_kind": "string", "value": entry})
+                continue
+            if not isinstance(entry, dict):
+                continue
+
             key = entry.get("string")
             param = entry.get("parameter", {})
             value_type = param.get("@valueType")

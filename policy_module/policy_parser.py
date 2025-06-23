@@ -39,8 +39,9 @@ class PolicyParser:
                     if not parsed_conditions:
                         parsed_conditions = [None]
 
-                    for idx, cond in enumerate(parsed_conditions):
+                    for cond in parsed_conditions:
                         cond = cond or {}
+                        first = cond.get("index", 1) == 1
                         values = cond.get("property_values")
                         if isinstance(values, (list, tuple)):
                             condition_values = ", ".join(values)
@@ -50,34 +51,36 @@ class PolicyParser:
                             condition_values = None
                         
                         record = {
-                            "id": obj.get("@id") if idx == 0 else None,
-                            "name": obj.get("@name") if idx == 0 else None,
-                            "enabled": obj.get("@enabled") if idx == 0 else None,
-                            "description": obj.get("description") if idx == 0 else None,
+                            "id": obj.get("@id") if first else None,
+                            "name": obj.get("@name") if first else None,
+                            "enabled": obj.get("@enabled") if first else None,
+                            "description": obj.get("description") if first else None,
                             "condition_raw": cond,  # 전체 반환 데이터를 저장
                             "condition_prefix": cond.get("prefix"),
                             "condition_property": cond.get("property"),
                             "condition_operator": cond.get("operator"),
                             "condition_values": condition_values,
                             "condition_result": cond.get("expression_value"),
+                            "condition_index": cond.get("index"),
+                            "condition_parent_index": cond.get("parent_index"),
                             "path": " > ".join(stack + [current_name] if current_name else stack)
                         }
                         if is_group:
                             record.update({
-                                "defaultRights": obj.get("@defaultRights") if idx == 0 else None,
-                                "cycleRequest": obj.get("@cycleRequest") if idx == 0 else None,
-                                "cycleResponse": obj.get("@cycleResponse") if idx == 0 else None,
-                                "cycleEmbeddedObject": obj.get("@cycleEmbeddedObject") if idx == 0 else None,
-                                "cloudSynced": obj.get("@cloudSynced") if idx == 0 else None,
-                                "acElements": str(obj.get("acElements")) if idx == 0 else None,
+                                "defaultRights": obj.get("@defaultRights") if first else None,
+                                "cycleRequest": obj.get("@cycleRequest") if first else None,
+                                "cycleResponse": obj.get("@cycleResponse") if first else None,
+                                "cycleEmbeddedObject": obj.get("@cycleEmbeddedObject") if first else None,
+                                "cloudSynced": obj.get("@cloudSynced") if first else None,
+                                "acElements": str(obj.get("acElements")) if first else None,
                                 "type": "group"
                             })
                             self.rulegroup_records.append(record)
                         else:
                             record.update({
-                                "actionContainer_raw": str(obj.get("actionContainer")) if idx == 0 else None,
-                                "immediateActions_raw": str(obj.get("immediateActionContainers")) if idx == 0 else None,
-                                "group_path": " > ".join(stack) if idx == 0 else None,
+                                "actionContainer_raw": str(obj.get("actionContainer")) if first else None,
+                                "immediateActions_raw": str(obj.get("immediateActionContainers")) if first else None,
+                                "group_path": " > ".join(stack) if first else None,
                                 "type": "rule"
                             })
                             self.rule_records.append(record)

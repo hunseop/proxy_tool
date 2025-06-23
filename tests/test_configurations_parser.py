@@ -27,5 +27,9 @@ def test_parse_configurations():
     assert conf["id"] == "conf1"
     assert conf["name"] == "Sample Config"
     assert conf["template_id"] == "tmpl"
+    assert len(conf["properties"]) == 1
+    prop = conf["properties"][0]
+    assert prop["key"] == "prop1"
+    assert prop["value"] == "val1"
 
 

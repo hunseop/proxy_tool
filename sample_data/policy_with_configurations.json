@@ -8,7 +8,15 @@
                 "@mwg-version": "11",
                 "@templateId": "tmpl",
                 "@targetId": "target",
-                "description": "conf desc"
+                "description": "conf desc",
+                "configurationProperties": {
+                    "configurationProperty": {
+                        "@key": "prop1",
+                        "@value": "val1",
+                        "@type": "string",
+                        "@encrypted": "false"
+                    }
+                }
             }
         }
     }

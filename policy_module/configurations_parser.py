@@ -11,6 +11,28 @@ class ConfigurationsParser:
         self.records = []
 
     @staticmethod
+    def parse_properties(conf: dict) -> list[dict]:
+        props = conf.get("configurationProperties", {}).get("configurationProperty")
+        result = []
+        if props is None:
+            return result
+        if not isinstance(props, list):
+            props = [props]
+        for p in props:
+            if not isinstance(p, dict):
+                continue
+            result.append(
+                {
+                    "key": p.get("@key"),
+                    "value": p.get("@value"),
+                    "type": p.get("@type"),
+                    "encrypted": p.get("@encrypted"),
+                    "list_type": p.get("@listType"),
+                }
+            )
+        return result
+
+    @staticmethod
     def ensure_list(value):
         if value is None:
             return []
@@ -31,6 +53,7 @@ class ConfigurationsParser:
                 "template_id": conf.get("@templateId"),
                 "target_id": conf.get("@targetId"),
                 "description": conf.get("description"),
+                "properties": self.parse_properties(conf),
                 "raw": conf,
             }
             self.records.append(record)
