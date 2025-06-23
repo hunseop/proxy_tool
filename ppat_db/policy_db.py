@@ -69,6 +69,20 @@ class PolicyList(Base):
     description = Column(Text)
 
 
+class PolicyConfiguration(Base):
+    __tablename__ = "policy_configurations"
+
+    id = Column(Integer, primary_key=True)
+    configuration_id = Column(String(100))
+    name = Column(String(200))
+    version = Column(String(50))
+    mwg_version = Column(String(50))
+    template_id = Column(String(100))
+    target_id = Column(String(100))
+    description = Column(Text)
+    raw = Column(Text)
+
+
 engine = create_engine("sqlite:///policy.db")
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
@@ -84,6 +98,7 @@ def save_policy_to_db(
     manager = PolicyManager(policy_source, list_source, from_xml=from_xml)
     list_records = manager.parse_lists()
     groups, rules = manager.parse_policy()
+    configs = manager.parse_configurations()
 
     with Session() as session:
         for l in list_records:
@@ -187,6 +202,20 @@ def save_policy_to_db(
                         list_ids.append(v)
             for lid in list_ids:
                 session.add(ConditionListMap(condition_id=cond_record.id, list_id=lid))
+
+        for conf in configs:
+            session.add(
+                PolicyConfiguration(
+                    configuration_id=conf.get("id"),
+                    name=conf.get("name"),
+                    version=conf.get("version"),
+                    mwg_version=conf.get("mwg_version"),
+                    template_id=conf.get("template_id"),
+                    target_id=conf.get("target_id"),
+                    description=conf.get("description"),
+                    raw=json.dumps(conf, ensure_ascii=False),
+                )
+            )
 
         session.commit()
 
