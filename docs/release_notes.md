@@ -4,6 +4,7 @@
 
 ### 개선 사항
 - `ConditionParser`가 중첩된 `propertyInstance` 구조를 재귀적으로 처리하도록 로직을 확장했습니다.
+- `propertyInstance` 내부 속성(`@useMostRecentConfiguration` 등)을 `attributes` 키로 반환하도록 개선했습니다.
 - 일부 소스 파일 끝에 누락된 줄바꿈을 추가하고 터미널 출력이 남아 있던 부분을 정리했습니다.
 
 ### 버그 수정

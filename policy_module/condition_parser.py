@@ -84,10 +84,16 @@ class ConditionParser:
                 if "parameter" in nested_prop
                 else None
             )
+            attributes = {
+                k.lstrip("@"): v
+                for k, v in nested_prop.items()
+                if k.startswith("@") and k not in {"@propertyId"}
+            }
             return {
                 "mode": "nested_property",
                 "value_type": value_type,
                 "property": nested_prop.get("@propertyId"),
+                "attributes": attributes,
                 "parameters": nested_params,
                 "parameter": nested_param,
             }
@@ -118,11 +124,19 @@ class ConditionParser:
                     if "parameter" in nested_prop
                     else None
                 )
+
+                attributes = {
+                    k.lstrip("@"): v
+                    for k, v in nested_prop.items()
+                    if k.startswith("@") and k not in {"@propertyId"}
+                }
+
                 results.append({
                     "key": key,
                     "value_type": value_type,
                     "value_kind": "nested_property",
                     "property": nested_prop.get("@propertyId"),
+                    "attributes": attributes,
                     "parameters": nested_params,
                     "parameter": nested_param,
                 })
@@ -164,9 +178,15 @@ class ConditionParser:
         if value:
             if "propertyInstance" in value:
                 nested_prop = value["propertyInstance"]
+                attributes = {
+                    k.lstrip("@"): v
+                    for k, v in nested_prop.items()
+                    if k.startswith("@") and k not in {"@propertyId"}
+                }
                 return {
                     "mode": "nested_property",
                     "property": nested_prop.get("@propertyId"),
+                    "attributes": attributes,
                     "parameters": self.parse_property_parameters(
                         nested_prop.get("parameters", {})
                     ),
