@@ -36,8 +36,11 @@ class PolicyCondition(Base):
 
     id = Column(Integer, primary_key=True)
     rule_id = Column(String(100))
+    group_id = Column(String(100))
     index = Column(Integer)
     prefix = Column(String(50))
+    open_bracket = Column(Integer, default=0)
+    close_bracket = Column(Integer, default=0)
     property = Column(String(200))
     operator = Column(String(100))
     values = Column(Text)
@@ -95,14 +98,52 @@ def save_policy_to_db(
             )
             session.add(rec)
 
+        current_group_id: str | None = None
+        group_condition_index = 0
         for g in groups:
-            record = PolicyGroup(
-                group_id=g.get("id"),
-                name=g.get("name"),
-                path=g.get("path"),
-                raw=json.dumps(g, ensure_ascii=False),
+            if g.get("id"):
+                current_group_id = g.get("id")
+                record = PolicyGroup(
+                    group_id=current_group_id,
+                    name=g.get("name"),
+                    path=g.get("path"),
+                    raw=json.dumps(g, ensure_ascii=False),
+                )
+                session.merge(record)
+                group_condition_index = 0
+            if current_group_id is None:
+                continue
+            group_condition_index += 1
+            cond = g.get("condition_raw") or {}
+            cond_record = PolicyCondition(
+                rule_id=None,
+                group_id=current_group_id,
+                index=group_condition_index,
+                prefix=cond.get("prefix"),
+                open_bracket=int(cond.get("open_bracket", 0)),
+                close_bracket=int(cond.get("close_bracket", 0)),
+                property=cond.get("property"),
+                operator=cond.get("operator"),
+                values=json.dumps(cond.get("property_values"), ensure_ascii=False)
+                if cond.get("property_values") is not None
+                else None,
+                result=cond.get("expression_value"),
+                raw=json.dumps(cond, ensure_ascii=False),
             )
-            session.merge(record)
+            session.add(cond_record)
+            session.flush()
+            values = cond.get("property_values")
+            list_ids: list[str] = []
+            if isinstance(values, str) and values in manager.list_db.lists:
+                list_ids.append(values)
+            elif isinstance(values, (list, tuple)):
+                for v in values:
+                    if isinstance(v, str) and v in manager.list_db.lists:
+                        list_ids.append(v)
+            for lid in list_ids:
+                session.add(
+                    ConditionListMap(condition_id=cond_record.id, list_id=lid)
+                )
 
         current_rule_id: str | None = None
         condition_index = 0
@@ -123,8 +164,11 @@ def save_policy_to_db(
             cond = r.get("condition_raw") or {}
             cond_record = PolicyCondition(
                 rule_id=current_rule_id,
+                group_id=None,
                 index=condition_index,
                 prefix=cond.get("prefix"),
+                open_bracket=int(cond.get("open_bracket", 0)),
+                close_bracket=int(cond.get("close_bracket", 0)),
                 property=cond.get("property"),
                 operator=cond.get("operator"),
                 values=json.dumps(cond.get("property_values"), ensure_ascii=False) if cond.get("property_values") is not None else None,
