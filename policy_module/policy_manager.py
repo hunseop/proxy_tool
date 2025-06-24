@@ -7,9 +7,9 @@ records parsed by :class:`PolicyParser`.
 
 from typing import Any, Dict, Iterable, List, Optional
 
-from .lists_parser import ListsParser
-from .policy_parser import PolicyParser
-from .configurations_parser import ConfigurationsParser
+from parsers.lists_parser import ListsParser
+from parsers.policy_parser import PolicyParser
+from parsers.configurations_parser import ConfigurationsParser
 
 
 class ListDatabase:
