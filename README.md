@@ -1,157 +1,176 @@
-# 프록시 모니터링 시스템
+# 프록시 모니터링 & 정책 관리 시스템
 
-프록시 서버의 리소스 사용량과 세션 정보를 모니터링하는 웹 애플리케이션입니다.
+프록시 서버 그룹의 리소스 사용량을 모니터링하고 정책을 관리하는 웹 애플리케이션입니다.
 
 ## 주요 기능
 
-- 실시간 프록시 서버 리소스 모니터링 (CPU, 메모리, 세션 등)
-- 세션 정보 조회 및 검색
-- 다중 서버 모니터링 지원
-- 설정 관리 (SSH 계정, SNMP, 임계값 등)
+### 프록시 관리
+- 목적별 프록시 그룹 관리
+  - Main Appliance: 정책 관리 주체
+  - Cluster Appliances: Main과 동일 정책 적용
+- 프록시 서버 정보 CRUD
+- 그룹 구성 관리
 
-## 시스템 요구사항
+### 모니터링
+- 실시간 프록시 서버 리소스 모니터링
+  - CPU, 메모리, 디스크, 네트워크 사용률
+  - 임계치 초과 항목 강조 표시
+- 세션 모니터링
+  - Client IP, User Name, URL 기반 검색
+  - IP/URL/Proxy 별 세션 통계
 
-- Python 3.6 이상
-- 모니터링할 프록시 서버에 SSH 접속 가능해야 함
-- 프록시 서버에 SNMP 설정 필요
+### 정책 관리
+- Main Appliance 정책 관리
+  - 정책 업데이트 및 동기화
+  - 정책 검색 및 동적 필터링
+  - 엑셀 형식 추출
+
+## 시스템 아키텍처
+
+### Backend
+- Flask 기반 RESTful API
+- 모듈식 구조:
+  - `monitoring_module`: 리소스 모니터링
+  - `policy_module`: 정책 관리
+  - `ppat_db`: 데이터베이스 관리
+- SQLite 데이터베이스
+
+### Frontend
+- 미니멀 & 반응형 웹 디자인
+- 실시간 데이터 업데이트
+- 대시보드 및 관리 인터페이스
+
+## API 엔드포인트
+
+### 프록시 관리
+- `GET /api/proxies`: 프록시 목록 조회
+- `POST /api/proxies`: 프록시 추가
+- `PUT /api/proxies/<id>`: 프록시 정보 수정
+- `DELETE /api/proxies/<id>`: 프록시 삭제
+- `GET /api/proxy-groups`: 프록시 그룹 조회
+
+### 모니터링
+- `GET /api/monitoring/resources`: 자원 사용률 조회
+- `GET /api/monitoring/sessions`: 세션 정보 조회
+- `POST /api/monitoring/thresholds`: 임계값 설정
+
+### 정책 관리
+- `GET /api/policies`: 정책 목록 조회
+- `POST /api/policies/update`: 정책 업데이트
+- `GET /api/policies/search`: 정책 검색
+- `GET /api/policies/export`: 정책 엑셀 추출
 
 ## 설치 방법
 
 1. 소스 코드 다운로드
 ```bash
 git clone <레포지토리 주소>
-cd PPAT
+cd proxy_tool
 ```
 
-2. 필요한 패키지 설치
+2. 가상환경 생성 및 활성화
+```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
+
+3. 필요한 패키지 설치
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 애플리케이션 실행
+4. 환경 설정
+- `config.json` 파일에서 기본 설정 구성
+- 프록시 서버 접속 정보 설정
+- 모니터링 임계값 설정
+
+5. 데이터베이스 초기화
 ```bash
-python app.py
+flask db upgrade
 ```
 
-4. 웹 브라우저에서 접속
-```
-http://localhost:5000
-```
-
-## 테스트 실행
-
-의존성 설치 후 다음 명령어로 테스트를 수행할 수 있습니다.
+6. 애플리케이션 실행
 ```bash
-pytest
+flask run
 ```
-
-## 설정 방법
-
-### SSH 설정
-
-프록시 서버에 연결하기 위한 SSH 계정 정보를 설정합니다.
-
-1. 웹 UI의 '설정' 메뉴에서 SSH 계정과 비밀번호 설정
-2. 또는 `config.json` 파일 직접 수정:
-```json
-{
-    "ssh_username": "your_ssh_username",
-    "ssh_password": "your_ssh_password",
-    "snmp_community": "public",
-    "cpu_threshold": 80,
-    "memory_threshold": 75
-}
-```
-
-### SNMP 설정
-
-모니터링할 프록시 서버에서 SNMP가 활성화되어 있어야 합니다.
-
-1. 프록시 서버에 SNMP 설치 (예: snmpd)
-2. SNMP 커뮤니티 문자열 설정
-3. 웹 UI의 '설정' 메뉴에서 SNMP 커뮤니티 설정
-
-## 사용 방법
-
-1. 서버 추가
-   - 대시보드 화면에서 '서버 추가' 버튼 클릭
-   - 프록시 서버 IP 또는 도메인 입력
-
-2. 모니터링 시작
-   - SSH 계정 정보 입력
-   - 조회 간격 선택
-   - '모니터링 시작' 버튼 클릭
-
-3. 세션 관리
-   - 상단 메뉴에서 '세션 관리' 클릭
-   - 서버 선택
-   - 필요한 경우 검색어 입력 후 '검색' 버튼 클릭
-
-4. 설정 변경
-   - 상단 메뉴에서 '설정' 클릭
-   - 필요한 설정 변경 후 '설정 저장' 버튼 클릭
 
 ## 프로젝트 구조
 
 ```
-proxy-monitoring-system/
-├── app.py                    # Flask 애플리케이션
-├── config.json               # 설정 파일
-├── monitor_module/          # 핵심 모니터링 모듈
+proxy_tool/
+├── api/                     # API 엔드포인트
 │   ├── __init__.py
-│   ├── config.py             # 기본 설정
-│   ├── resource.py           # 리소스 모니터링
-│   ├── session.py            # 세션 관리
-│   └── utils.py              # 유틸리티 함수
-├── policy_module/           # 정책 파싱 모듈
-│   ├── condition_parser.py
-│   ├── lists_parser.py
-│   ├── policy_manager.py
-│   └── policy_parser.py
-├── device_clients/          # 장비 연동 모듈
+│   ├── proxy.py            # 프록시 관리 API
+│   ├── monitoring.py       # 모니터링 API
+│   └── policy.py           # 정책 관리 API
+├── monitoring_module/      # 모니터링 모듈
 │   ├── __init__.py
-│   ├── ssh.py                # SSH 클라이언트
-│   └── skyhigh_client.py     # Skyhigh SWG 연동
-├── ppat_db/                 # 공통 데이터베이스 스키마
+│   ├── config.py
+│   ├── resource.py
+│   └── session.py
+├── policy_module/         # 정책 관리 모듈
+│   ├── __init__.py
+│   ├── config.py
+│   └── policy_manager.py
+├── ppat_db/              # 데이터베이스 모듈
+│   ├── __init__.py
 │   └── policy_db.py
-├── static/                   # 정적 파일
-│   ├── css/
-│   │   └── styles.css
-│   └── js/
-│       └── main.js
-├── templates/                # HTML 템플릿
-│   └── index.html
-└── requirements.txt          # 의존성 패키지
+├── static/               # 프론트엔드 리소스
+├── templates/            # HTML 템플릿
+├── app.py               # Flask 애플리케이션
+└── config.json          # 설정 파일
 ```
 
-## 정책 파싱 모듈
+## 설정 방법
 
-`policy_module` 디렉터리에는 SWG 정책을 파싱하기 위한 모듈이 포함되어 있습니다.
-`PolicyParser`와 `ListsParser`는 각각 정책과 객체 목록을 해석합니다.
-새롭게 추가된 `PolicyManager`를 사용하면 두 파서의 결과를 연결하여
-정책 조건에서 참조하는 리스트 항목을 손쉽게 확인할 수 있습니다.
-자원 사용률 조회 기능은 `monitor_module` 모듈에 따로 구현되어 있으며,
-두 모듈에서 사용하는 데이터베이스 스키마는 `ppat_db` 패키지에서 관리합니다.
+### 프록시 그룹 설정
 
-### 샘플 정책 데이터 저장
-
-`sample_data` 디렉터리에는 정책과 리스트가 함께 들어 있는 `policy_combined.json` 파일과 추가 규칙을 포함한 `policy_combined_extended.json` 두 가지 예제가 제공됩니다.
-다음 명령으로 DB에 저장해 볼 수 있습니다.
-
-```bash
-python -m ppat_db.policy_db sample_data/policy_combined.json
+```json
+{
+    "name": "Production-Proxy",
+    "description": "운영 프록시 그룹",
+    "main_appliance": {
+        "ip": "192.168.1.10",
+        "ssh_port": 22,
+        "snmp_port": 161
+    },
+    "cluster_appliances": [
+        {
+            "ip": "192.168.1.11",
+            "ssh_port": 22,
+            "snmp_port": 161
+        },
+        {
+            "ip": "192.168.1.12",
+            "ssh_port": 22,
+            "snmp_port": 161
+        }
+    ]
+}
 ```
-위 명령을 실행하면 정책 그룹과 룰뿐 아니라 객체 목록이 `policy_lists`
-테이블에 저장되며, 그룹과 룰의 모든 조건은 `policy_conditions` 테이블에서
-확인할 수 있습니다. 조건에는 괄호 개수를 나타내는 `open_bracket`,
-`close_bracket` 컬럼이 포함됩니다.
-보다 자세한 스키마 설명은 `docs/db_schema.md` 파일을 참고하세요.
+
+## 사용 방법
+
+1. 프록시 그룹 관리
+   - 프록시 서버 추가/수정/삭제
+   - Main/Cluster 구성 관리
+
+2. 모니터링
+   - 자원 사용률 대시보드 확인
+   - 세션 정보 조회 및 검색
+   - 임계값 설정
+
+3. 정책 관리
+   - Main Appliance 선택
+   - 정책 업데이트
+   - 정책 검색 및 필터링
+   - 정책 엑셀 추출
 
 ## 문제 해결
 
-* **SSH 연결 오류**: SSH 계정, 비밀번호, 포트가 올바른지 확인
-* **SNMP 오류**: SNMP 커뮤니티 문자열이 올바른지, SNMP가 활성화되어 있는지 확인
-* **데이터가 표시되지 않음**: 방화벽 설정 확인, SSH와 SNMP 포트가 개방되어 있는지 확인
+* **프록시 연결 오류**: SSH/SNMP 설정 확인
+* **정책 동기화 실패**: Main Appliance 연결 상태 확인
+* **모니터링 데이터 누락**: 네트워크 연결 및 권한 설정 확인
 
 ## 라이선스
 
