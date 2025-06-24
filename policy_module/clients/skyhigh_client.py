@@ -14,7 +14,7 @@ import os
 import re
 
 from ..parsers.policy_parser import PolicyParser
-from ..config import Config
+from ..config import Config, ProxyConfig
 
 # 보안 경고 무시
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -29,21 +29,22 @@ class SkyhighSWGClient:
     세션 관리와 정책 데이터 내보내기 기능을 제공합니다.
     """
     
-    def __init__(self, base_url=None, username=None, password=None, verify_ssl=False):
-        self.base_url = (base_url or Config.SKYHIGH_BASE_URL).rstrip('/')
-        self.username = username or Config.SKYHIGH_USERNAME
-        self.password = password or Config.SKYHIGH_PASSWORD
-        self.verify_ssl = verify_ssl
+    def __init__(self, proxy_config: ProxyConfig):
+        """
+        Args:
+            proxy_config (ProxyConfig): 프록시 설정
+        """
+        self.proxy_config = proxy_config
         self.session = requests.Session()
         self.session_id = None
 
     def login(self):
         """API 로그인 및 세션 설정"""
-        login_url = urljoin(self.base_url + '/', 'login')
+        login_url = urljoin(self.proxy_config.base_url + '/', 'login')
         response = self.session.post(
             login_url, 
-            auth=HTTPBasicAuth(self.username, self.password), 
-            verify=self.verify_ssl
+            auth=HTTPBasicAuth(self.proxy_config.username, self.proxy_config.password), 
+            verify=False
         )
         
         if response.status_code == 200:
@@ -53,7 +54,7 @@ class SkyhighSWGClient:
                         self.session_id = cookie.strip().split('=')[1]
                         break
             if self.session_id:
-                logger.info("로그인 성공")
+                logger.info(f"프록시 {self.proxy_config.base_url} 로그인 성공")
             else:
                 raise Exception("세션 ID를 찾을 수 없습니다.")
         else:
@@ -63,14 +64,14 @@ class SkyhighSWGClient:
         """API 엔드포인트 URL 생성"""
         if not self.session_id:
             raise Exception("세션 ID가 없습니다. 먼저 로그인해야 합니다.")
-        return urljoin(self.base_url + '/', f"{endpoint};jsessionid={self.session_id}")
+        return urljoin(self.proxy_config.base_url + '/', f"{endpoint};jsessionid={self.session_id}")
 
     def logout(self):
         """API 로그아웃"""
         logout_url = self._build_url('logout')
-        response = self.session.post(logout_url, verify=self.verify_ssl)
+        response = self.session.post(logout_url, verify=False)
         if response.ok:
-            logger.info("로그아웃 완료")
+            logger.info(f"프록시 {self.proxy_config.base_url} 로그아웃 완료")
         else:
             raise Exception(f"로그아웃 실패: {response.status_code} {response.text}")
 
@@ -91,7 +92,7 @@ class SkyhighSWGClient:
             'pageSize': page_size
         }
         url = self._build_url('rulesets')
-        response = self.session.get(url, params=params, verify=self.verify_ssl)
+        response = self.session.get(url, params=params, verify=False)
         
         if response.ok:
             try:
@@ -127,7 +128,7 @@ class SkyhighSWGClient:
             tuple: (정책 매니저 객체, 파싱된 데이터)
         """
         url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
-        response = self.session.post(url, verify=self.verify_ssl)
+        response = self.session.post(url, verify=False)
         
         if response.ok:
             os.makedirs(output_dir, exist_ok=True)
@@ -138,7 +139,10 @@ class SkyhighSWGClient:
 
             parser = PolicyParser(response.content, from_xml=True)
             parser.parse()
-            parser.to_excel(f"{filepath}_rulegroups.xlsx", f"{filepath}_rules.xlsx")
+            parser.to_excel(
+                f"{filepath}_rulegroups.xlsx",
+                f"{filepath}_rules.xlsx"
+            )
             
             logger.info(f"Rule Set '{title}'이(가) '{filename}'로 저장되었습니다.")
             return parser, parser.get_parsed_data()
