@@ -1,8 +1,8 @@
 import paramiko
 import time
 import logging
-from .config import Config
-from .utils import logger
+from monitor_module.config import Config
+from monitor_module.utils import logger
 
 class SSHClient:
     def __init__(self, host, username=None, password=None, port=None, max_retries=3, retry_delay=5):

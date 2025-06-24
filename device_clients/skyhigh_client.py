@@ -7,7 +7,7 @@ import urllib3
 from datetime import datetime
 import os
 import re
-from .policy_parser import PolicyParser
+from policy_module.policy_parser import PolicyParser
 
 # 보안 경고 무시
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -88,6 +88,16 @@ class SkyhighSWGClient:
         else:
             raise Exception(f"Rule Set 목록 조회 실패: {response.status_code} {response.text}")
 
+    def download_ruleset_xml(self, ruleset_id):
+        """Download a rule set and return its XML content."""
+        url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
+        response = self.session.post(url, verify=self.verify_ssl)
+        if response.ok:
+            return response.content
+        raise Exception(
+            f"Rule Set '{ruleset_id}' 다운로드 실패: {response.status_code} {response.text}"
+        )
+
     def export_ruleset_to_xml_file(self, ruleset_id, title, output_dir='exports'):
         url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
         response = self.session.post(url, verify=self.verify_ssl)
@@ -115,8 +125,16 @@ class SkyhighSWGClient:
 
             parser = PolicyParser(response.content, from_xml=True)
             parser.parse()
-            parser.to_excel(f"{filepath}_rulegroups.xlsx", f"{filepath}_rules.xlsx")
-    
-            logger.info(f"Rule Set '{title}'이(가) '{filename}'로 저장되었습니다.")
+            parser.to_excel(
+                f"{filepath}_rulegroups.xlsx",
+                f"{filepath}_rules.xlsx",
+            )
+
+            logger.info(
+                f"Rule Set '{title}'이(가) '{filename}'로 저장되었습니다."
+            )
         else:
-            raise Exception(f"Rule Set '{title}' 내보내기 실패: {response.status_code} {response.text}")    
+            raise Exception(
+                f"Rule Set '{title}' 내보내기 실패: {response.status_code} {response.text}"
+            )
+

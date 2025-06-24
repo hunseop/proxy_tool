@@ -25,4 +25,7 @@ class Config:
     }
     
     # 명령어
-    SESSION_CMD = """/opt/mwg/bin/mwg-core -S connections | awk -F " \\| " '{print $2" | "%5" | "%6" | "%6" | "%7" | "%18" | "%10" | "%11" | "%15"}'"""
+    SESSION_CMD = (
+        "/opt/mwg/bin/mwg-core -S connections "
+        "| awk -F ' | ' '{print $2" | "%5" | "%6" | "%6" | "%7" | "%18" | "%10" | "%11" | "%15"}'"
+    )
