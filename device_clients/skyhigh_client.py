@@ -88,6 +88,16 @@ class SkyhighSWGClient:
         else:
             raise Exception(f"Rule Set 목록 조회 실패: {response.status_code} {response.text}")
 
+    def download_ruleset_xml(self, ruleset_id):
+        """Download a rule set and return its XML content."""
+        url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
+        response = self.session.post(url, verify=self.verify_ssl)
+        if response.ok:
+            return response.content
+        raise Exception(
+            f"Rule Set '{ruleset_id}' 다운로드 실패: {response.status_code} {response.text}"
+        )
+
     def export_ruleset_to_xml_file(self, ruleset_id, title, output_dir='exports'):
         url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
         response = self.session.post(url, verify=self.verify_ssl)
