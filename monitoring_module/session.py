@@ -1,5 +1,5 @@
 import pandas as pd
-from device_clients.ssh import SSHClient
+from clients.ssh import SSHClient
 from .config import Config
 from .utils import split_line
 
