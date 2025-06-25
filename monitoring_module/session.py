@@ -1,5 +1,7 @@
 import pandas as pd
-from clients.ssh import SSHClient
+# Use a relative import so the SSH client can be resolved when this module is
+# imported as part of the package.
+from .clients.ssh import SSHClient
 from .config import Config
 from .utils import split_line
 

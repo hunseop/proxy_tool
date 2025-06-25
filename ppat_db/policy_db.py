@@ -101,6 +101,32 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 
+class PolicyDB:
+    """Simple context manager for accessing stored policy rules."""
+
+    def __enter__(self):
+        self.session = Session()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.session.close()
+
+    def list_policies(self) -> list[dict[str, Any]]:
+        """Return all stored policy rules as dictionaries."""
+        records = self.session.query(PolicyRule).all()
+        result: list[dict[str, Any]] = []
+        for rec in records:
+            try:
+                raw = json.loads(rec.raw) if rec.raw else {}
+            except Exception:
+                raw = {}
+            raw.setdefault("id", rec.rule_id)
+            raw.setdefault("name", rec.name)
+            raw.setdefault("group_path", rec.group_path)
+            result.append(raw)
+        return result
+
+
 def save_policy_to_db(
     policy_source: Any,
     list_source: Any | None = None,
