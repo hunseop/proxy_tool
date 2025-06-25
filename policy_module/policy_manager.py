@@ -7,9 +7,11 @@ records parsed by :class:`PolicyParser`.
 
 from typing import Any, Dict, Iterable, List, Optional
 
-from parsers.lists_parser import ListsParser
-from parsers.policy_parser import PolicyParser
-from parsers.configurations_parser import ConfigurationsParser
+# Use relative imports so that the parsers package is correctly resolved when
+# this module is used without installing the policy_module package.
+from .parsers.lists_parser import ListsParser
+from .parsers.policy_parser import PolicyParser
+from .parsers.configurations_parser import ConfigurationsParser
 
 
 class ListDatabase:

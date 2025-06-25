@@ -106,3 +106,10 @@ class PolicyParser:
         df_rules = pd.DataFrame(self.rule_records)
         df_groups.to_excel(group_path, index=False, engine="openpyxl")
         df_rules.to_excel(rule_path, index=False, engine="openpyxl")
+
+    def get_parsed_data(self):
+        """Return parsed rule groups and rules as a dict."""
+        return {
+            "rule_groups": self.rulegroup_records,
+            "rules": self.rule_records,
+        }

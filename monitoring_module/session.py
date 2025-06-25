@@ -1,17 +1,17 @@
 import pandas as pd
-from clients.ssh import SSHClient
-from .config import Config
+# Use a relative import so the SSH client can be resolved when this module is
+# imported as part of the package.
+from .clients.ssh import SSHClient
+from .config import Config, ProxyConfig
 from .utils import split_line
 
 class SessionManager:
-    def __init__(self, host, username=None, password=None):
-        self.host = host
-        self.username = username
-        self.password = password
+    def __init__(self, host: str, username: str | None = None, password: str | None = None, port: int = 22):
+        self.proxy = ProxyConfig(host=host, username=username or 'root', password=password or '123456', port=port)
 
     def get_session(self) -> pd.DataFrame:
         """프록시 서버의 세션 정보를 가져옴"""
-        with SSHClient(self.host, self.username, self.password) as ssh:
+        with SSHClient(self.proxy) as ssh:
             stdin, stdout, stderr = ssh.execute_command(Config.SESSION_CMD)
             lines = stdout.readlines()
 

@@ -8,11 +8,13 @@ from .policy_manager import PolicyManager
 from .parsers.policy_parser import PolicyParser
 from .parsers.lists_parser import ListsParser
 from .parsers.configurations_parser import ConfigurationsParser
+from .parsers.condition_parser import ConditionParser
 
 __all__ = [
     'PolicyConfig',
     'PolicyManager',
     'PolicyParser',
     'ListsParser',
-    'ConfigurationsParser'
+    'ConfigurationsParser',
+    'ConditionParser'
 ]

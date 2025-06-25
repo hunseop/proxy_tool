@@ -5,16 +5,16 @@
 
 import logging
 import json
+
 from policy_module.clients.skyhigh_client import SkyhighSWGClient
 from policy_module.config import Config, ProxyConfig
-from policy_module.policy_manager import PolicyManager
 from ppat_db.policy_db import PolicyDB, save_policy_to_db
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def test_policy_fetch(host: str, username: str, password: str):
+def test_policy_fetch(host: str, username: str, password: str) -> bool:
     """정책 조회 테스트
     
     Args:
@@ -78,6 +78,7 @@ def test_policy_fetch(host: str, username: str, password: str):
     except Exception as e:
         logger.error(f"테스트 실패: {str(e)}")
         return False
+
 
 if __name__ == "__main__":
     # 테스트할 프록시 서버 정보

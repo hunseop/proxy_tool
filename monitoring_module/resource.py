@@ -1,19 +1,19 @@
 from pysnmp.hlapi import *
-from clients.ssh import SSHClient
-from .config import Config
+# Use a relative import to ensure the SSH client is found when the package is
+# executed without installation.
+from .clients.ssh import SSHClient
+from .config import Config, ProxyConfig
 from .utils import get_current_timestamp, validate_resource_data, logger, split_line
 
 class ResourceMonitor:
-    def __init__(self, host, username=None, password=None):
-        self.host = host
-        self.username = username
-        self.password = password
+    def __init__(self, host: str, username: str | None = None, password: str | None = None, port: int = 22):
+        self.proxy = ProxyConfig(host=host, username=username or 'root', password=password or '123456', port=port)
 
     def get_memory_and_uniq_clients(self) -> tuple:
         """메모리 사용률과 고유 클라이언트 수를 한번에 조회"""
         memory_cmd = '''awk '/MemTotal/ {total=$2} /MemAvailable/ {available=$2} END {printf "%.0f", 100 - (available / total * 100)}' /proc/meminfo'''
         try:
-            with SSHClient(self.host, self.username, self.password) as ssh:
+            with SSHClient(self.proxy) as ssh:
                 # 메모리 데이터 조회
                 stdin, stdout, stderr = ssh.execute_command(memory_cmd)
                 memory_value = stdout.readlines()
@@ -52,7 +52,7 @@ class ResourceMonitor:
             errorIndication, errorStatus, errorIndex, varBinds = next(
                 getCmd(SnmpEngine(),
                       CommunityData(Config.SNMP_COMMUNITY, mpModel=1),  # SNMPv2c 명시적 지정
-                      UdpTransportTarget((self.host, Config.SNMP_PORT)),
+                      UdpTransportTarget((self.proxy.host, Config.SNMP_PORT)),
                       ContextData(),
                       *odis)
             )
@@ -128,7 +128,7 @@ class ResourceMonitor:
             result = {
                 'date': timestamp['date'],
                 'time': timestamp['time'],
-                'device': self.host,
+                'device': self.proxy.host,
                 'cpu': str(snmp_data['cpu']),
                 'memory': str(memory),
                 'uc': str(unique_clients),
@@ -159,7 +159,7 @@ class ResourceMonitor:
             return {
                 'date': timestamp['date'],
                 'time': timestamp['time'],
-                'device': self.host,
+                'device': self.proxy.host,
                 'cpu': 'error',
                 'memory': 'error',
                 'uc': 'error',
