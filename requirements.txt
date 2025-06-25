@@ -1,9 +1,9 @@
+pysnmp==4.4.12
 pandas
 xmltodict
 openpyxl
 requests
 urllib3
-pysnmp
 paramiko
 flask
 SQLAlchemy
