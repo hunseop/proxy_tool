@@ -18,18 +18,23 @@ graph TD
         C["policy_module"] --> C1["clients"]
         C --> C2["parsers"]
         C --> C3["policy_manager.py<br/>(정책 관리)"]
-        C --> C4["config.py<br/>(정책 설정)"]
+        C --> C4["policy_store.py<br/>(정책 저장소)"]
+        C --> C5["config.py<br/>(정책 설정)"]
         
         C1 --> CSH["skyhigh_client.py<br/>(Skyhigh API)"]
         
-        C2 --> CP1["policy_parser.py"]
-        C2 --> CP2["condition_parser.py"]
-        C2 --> CP3["configurations_parser.py"]
-        C2 --> CP4["lists_parser.py"]
+        C2 --> CP1["policy_parser.py<br/>(정책 파싱)"]
+        C2 --> CP2["condition_parser.py<br/>(조건 파싱)"]
+        C2 --> CP3["configurations_parser.py<br/>(설정 파싱)"]
+        C2 --> CP4["lists_parser.py<br/>(리스트 파싱)"]
+        
+        CSH --> C3
+        C2 --> C3
+        C3 --> C4
     end
     
     BSH --> |"시스템 데이터"| D[ppat_db]
-    C3 --> |"정책 데이터"| D[ppat_db]
+    C4 --> |"정책 데이터"| D[ppat_db]
     
     subgraph "ppat_db"
         D1["policy_db.py<br/>(데이터베이스 관리)"]
@@ -53,29 +58,33 @@ graph TD
 - **역할**: 정책 관리 및 파싱
 - **구성 요소**:
   - `clients/`: 정책 관련 클라이언트
-    - `skyhigh_client.py`: Skyhigh SWG API 통신
+    - `skyhigh_client.py`: Skyhigh SWG API 통신 (Context Manager 지원)
   - `parsers/`: 정책 파싱 컴포넌트
     - `policy_parser.py`: 기본 정책 파싱
     - `condition_parser.py`: 조건 파싱
     - `configurations_parser.py`: 설정 파싱
     - `lists_parser.py`: 리스트 파싱
-  - `policy_manager.py`: 정책 관리 총괄
-    - 정책, 리스트, 설정 데이터 파싱
-    - 리스트 참조 해석
-    - 메모리 캐싱
+  - `policy_manager.py`: 정책 데이터 파싱 및 변환
+    - 단일 소스에서 정책/리스트/설정 파싱
+    - XML/JSON 형식 지원
     - [상세 문서](policy_manager.md)
   - `policy_store.py`: 정책 데이터 저장소
     - API/파일 소스로부터 데이터 수집
-    - 단일 트랜잭션 처리
+    - 단일 트랜잭션으로 일관성 보장
     - 데이터베이스 저장 관리
     - [상세 문서](policy_store.md)
   - `config.py`: 정책 관련 설정
-- **데이터 흐름**: Skyhigh API → 정책 파싱 → DB 저장
+- **데이터 흐름**: 
+  1. Skyhigh API/파일 → PolicyManager (파싱)
+  2. PolicyManager → PolicyStore (변환)
+  3. PolicyStore → DB (저장)
 
 ### 3. ppat_db 모듈
 - **역할**: 중앙 데이터 저장소
 - **구성 요소**: 
   - `policy_db.py`: 데이터베이스 관리
+    - 정책 테이블 스키마 정의
+    - SQLAlchemy ORM 모델
 - **데이터 처리**:
   - 모니터링 데이터 저장 (`monitor_module`에서 수신)
   - 정책 데이터 저장 (`policy_module`에서 수신)
@@ -94,15 +103,17 @@ graph TD
 
 3. **데이터 흐름 최적화**
    - 모니터링 데이터: SSH/SNMP → 리소스 모니터링 → DB
-   - 정책 데이터: Skyhigh API → 정책 파싱 → DB
-   - 명확한 데이터 처리 경로
+   - 정책 데이터: 소스 → PolicyManager → PolicyStore → DB
+   - 단일 트랜잭션으로 데이터 일관성 보장
 
 4. **유지보수성**
    - 모듈별 독립적인 코드 관리
    - 설정의 중앙화
    - 관심사의 명확한 분리
+   - 상세한 문서화
 
 5. **확장성**
    - 새로운 모니터링 클라이언트 추가 용이
    - 새로운 정책 파서 추가 용이
-   - 모듈별 독립적인 기능 확장 가능 
+   - 모듈별 독립적인 기능 확장 가능
+   - 다양한 데이터 소스 지원 
