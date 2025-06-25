@@ -75,7 +75,7 @@ class PolicyParser:
                                 "acElements": str(obj.get("acElements")) if first else None,
                                 "type": "group"
                             })
-                            self.rulegroup_records.append(record)
+                            self.rule_records.append(record)
                         else:
                             record.update({
                                 "actionContainer_raw": str(obj.get("actionContainer")) if first else None,
@@ -99,10 +99,8 @@ class PolicyParser:
                     walk(item, stack)
         
         walk(self.data)
-        return self.rulegroup_records, self.rule_records
+        return self.rule_records
     
-    def to_excel(self, group_path: str, rule_path: str):
-        df_groups = pd.DataFrame(self.rulegroup_records)
+    def to_excel(self, rule_path: str):
         df_rules = pd.DataFrame(self.rule_records)
-        df_groups.to_excel(group_path, index=False, engine="openpyxl")
         df_rules.to_excel(rule_path, index=False, engine="openpyxl")

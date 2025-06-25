@@ -12,8 +12,9 @@ import urllib3
 from datetime import datetime
 import os
 import re
+import xmltodict
+import json
 
-from ..parsers.policy_parser import PolicyParser
 from ..config import Config, ProxyConfig
 
 # 보안 경고 무시
@@ -116,36 +117,22 @@ class SkyhighSWGClient:
         else:
             raise Exception(f"Rule Set 목록 조회 실패: {response.status_code} {response.text}")
 
-    def export_ruleset(self, ruleset_id, title, output_dir='exports'):
+    def export_ruleset(self, ruleset_id, title):
         """Rule Set을 내보내고 파싱
         
         Args:
             ruleset_id (str): Rule Set ID
             title (str): Rule Set 제목
-            output_dir (str): 출력 디렉토리
             
         Returns:
-            tuple: (정책 매니저 객체, 파싱된 데이터)
+            뭐라고 해야해 이거
         """
         url = self._build_url(f'rulesets/rulegroups/{ruleset_id}/export')
         response = self.session.post(url, verify=False)
         
         if response.ok:
-            os.makedirs(output_dir, exist_ok=True)
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            safe_title = re.sub(r'[\\/*?:"<>|]', '_', title)
-            filename = f"{timestamp}_{safe_title}"
-            filepath = os.path.join(output_dir, filename)
-
-            parser = PolicyParser(response.content, from_xml=True)
-            parser.parse()
-            parser.to_excel(
-                f"{filepath}_rulegroups.xlsx",
-                f"{filepath}_rules.xlsx"
-            )
-            
-            logger.info(f"Rule Set '{title}'이(가) '{filename}'로 저장되었습니다.")
-            return parser, parser.get_parsed_data()
+            logger.info(f"Rule Set '{title}'이(가) 추출 되었습니다.")
+            return response.content
         else:
             raise Exception(f"Rule Set '{title}' 내보내기 실패: {response.status_code} {response.text}")
 
