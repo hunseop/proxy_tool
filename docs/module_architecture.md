@@ -64,6 +64,11 @@ graph TD
     - 리스트 참조 해석
     - 메모리 캐싱
     - [상세 문서](policy_manager.md)
+  - `policy_store.py`: 정책 데이터 저장소
+    - API/파일 소스로부터 데이터 수집
+    - 단일 트랜잭션 처리
+    - 데이터베이스 저장 관리
+    - [상세 문서](policy_store.md)
   - `config.py`: 정책 관련 설정
 - **데이터 흐름**: Skyhigh API → 정책 파싱 → DB 저장
 
