@@ -101,14 +101,9 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
 
-def save_policy_to_db(
-    policy_source: Any,
-    list_source: Any | None = None,
-    *,
-    from_xml: bool = False,
-) -> None:
-    """Parse policy and list data then store to the local DB."""
-    manager = PolicyManager(policy_source, list_source, from_xml=from_xml)
+def save_policy_to_db(source: Any, *, from_xml: bool = False) -> None:
+    """Parse policy XML/JSON and store records in the local DB."""
+    manager = PolicyManager(source, from_xml=from_xml)
     list_records = manager.parse_lists()
     groups, rules = manager.parse_policy()
     configs = manager.parse_configurations()
@@ -258,15 +253,10 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: policy_db.py <policy_json> [lists_json]")
+        print("Usage: policy_db.py <policy_xml>")
         raise SystemExit(1)
 
     with open(sys.argv[1], "r", encoding="utf-8") as f:
-        policy = json.load(f)
+        xml_data = f.read()
 
-    lists = None
-    if len(sys.argv) > 2:
-        with open(sys.argv[2], "r", encoding="utf-8") as f:
-            lists = json.load(f)
-
-    save_policy_to_db(policy, lists)
+    save_policy_to_db(xml_data, from_xml=True)

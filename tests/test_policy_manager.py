@@ -95,7 +95,13 @@ lists_data_empty = {
 }
 
 def test_resolve_lists():
-    pm = PolicyManager(policy_data, lists_data, from_xml=False)
+    data = {
+        "libraryContent": {
+            "ruleGroup": policy_data["libraryContent"]["ruleGroup"],
+            "lists": lists_data["libraryContent"]["lists"],
+        }
+    }
+    pm = PolicyManager(data, from_xml=False)
     pm.parse_lists()
     groups, rules = pm.parse_policy()
     assert rules and isinstance(rules[0].get("lists_resolved"), list)
@@ -112,7 +118,13 @@ def test_resolve_lists_from_combined():
     assert values == ["example.com", "example.org"]
 
 def test_empty_list_entries():
-    pm = PolicyManager(policy_data, lists_data_empty, from_xml=False)
+    data = {
+        "libraryContent": {
+            "ruleGroup": policy_data["libraryContent"]["ruleGroup"],
+            "lists": lists_data_empty["libraryContent"]["lists"],
+        }
+    }
+    pm = PolicyManager(data, from_xml=False)
     records = pm.parse_lists()
     assert len(records) == 1
     assert records[0]["list_id"] == "list1"

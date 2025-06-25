@@ -1,9 +1,4 @@
-"""Utility classes to link policy conditions with list entries.
-
-This module keeps the original parsing logic intact. It provides helper
-classes to store list entries and resolve list identifiers in policy
-records parsed by :class:`PolicyParser`.
-"""
+"""Policy parsing helper utilities."""
 
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -13,7 +8,7 @@ from .parsers.configurations_parser import ConfigurationsParser
 
 
 class ListDatabase:
-    """Simple in-memory database for list entries."""
+    """간단한 메모리 리스트 저장소."""
 
     def __init__(self) -> None:
         self.lists: Dict[str, List[Dict[str, Any]]] = {}
@@ -30,36 +25,31 @@ class ListDatabase:
 
 
 class PolicyManager:
-    """Combine policy parsing with list resolution."""
+    """단일 XML/JSON 소스로부터 정책 데이터를 추출한다."""
 
-    def __init__(
-        self,
-        policy_source: Any,
-        list_source: Any | None = None,
-        *,
-        from_xml: bool = False,
-    ) -> None:
-        self.policy_source = policy_source
-        self.list_source = list_source if list_source is not None else policy_source
+    def __init__(self, source: Any, *, from_xml: bool = False) -> None:
+        self.source = source
         self.from_xml = from_xml
         self.list_db = ListDatabase()
-        self.policy_parser = PolicyParser(policy_source, from_xml=from_xml)
+        self.policy_parser = PolicyParser(source, from_xml=from_xml)
 
     def parse_lists(self) -> List[Dict[str, Any]]:
-        parser = ListsParser(self.list_source, from_xml=self.from_xml)
+        parser = ListsParser(self.source, from_xml=self.from_xml)
         records = parser.parse()
         self.list_db.load(records)
         return records
 
     def parse_configurations(self) -> List[Dict[str, Any]]:
-        parser = ConfigurationsParser(self.policy_source, from_xml=self.from_xml)
+        parser = ConfigurationsParser(self.source, from_xml=self.from_xml)
         return parser.parse()
 
-    def parse_policy(self) -> tuple:
-        rulegroups, rules = self.policy_parser.parse()
-        self._resolve(rulegroups)
+    def parse_policy(self) -> tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+        records = self.policy_parser.parse()
+        groups = [r for r in records if r.get("type") == "group"]
+        rules = [r for r in records if r.get("type") == "rule"]
+        self._resolve(groups)
         self._resolve(rules)
-        return rulegroups, rules
+        return groups, rules
 
     def _resolve(self, records: Iterable[Dict[str, Any]]) -> None:
         for rec in records:

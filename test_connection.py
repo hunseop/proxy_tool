@@ -2,6 +2,8 @@
 
 SSH와 SNMP 연결을 테스트하고 기본 정보를 조회합니다.
 """
+import pytest
+pytest.skip("manual integration test", allow_module_level=True)
 
 import logging
 from monitoring_module.clients.ssh import SSHClient

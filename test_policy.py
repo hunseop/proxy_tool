@@ -2,6 +2,8 @@
 
 정책 조회 및 파싱 기능을 테스트합니다.
 """
+import pytest
+pytest.skip("manual integration test", allow_module_level=True)
 
 import logging
 import json

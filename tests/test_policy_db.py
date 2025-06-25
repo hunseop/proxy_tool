@@ -81,7 +81,7 @@ def test_save_policy_with_group_conditions():
         }
     }
 
-    pdb.save_policy_to_db(policy)
+    pdb.save_policy_to_db(policy, from_xml=False)
 
     with pdb.Session() as session:
         groups = session.query(pdb.PolicyGroup).all()
@@ -111,7 +111,7 @@ def test_save_policy_configurations():
     with open(path, "r", encoding="utf-8") as f:
         policy = json.load(f)
 
-    pdb.save_policy_to_db(policy)
+    pdb.save_policy_to_db(policy, from_xml=False)
 
     with pdb.Session() as session:
         configs = session.query(pdb.PolicyConfiguration).all()

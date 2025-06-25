@@ -3,7 +3,7 @@ sys.modules.setdefault("pandas", types.ModuleType("pandas")).DataFrame = lambda 
 sys.modules.setdefault("xmltodict", types.ModuleType("xmltodict")).parse = lambda s: {}
 import os; sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from policy_module.condition_parser import ConditionParser
+from policy_module.parsers.condition_parser import ConditionParser
 
 
 def test_nested_parent_indexes():
