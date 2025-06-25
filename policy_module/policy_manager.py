@@ -12,56 +12,67 @@ from .parsers.policy_parser import PolicyParser
 from .parsers.configurations_parser import ConfigurationsParser
 
 
-class ListDatabase:
-    """Simple in-memory database for list entries."""
-
-    def __init__(self) -> None:
-        self.lists: Dict[str, List[Dict[str, Any]]] = {}
-
-    def load(self, records: Iterable[Dict[str, Any]]) -> None:
-        for rec in records:
-            list_id = rec.get("list_id")
-            if not list_id:
-                continue
-            self.lists.setdefault(list_id, []).append(rec)
-
-    def get(self, list_id: str) -> Optional[List[Dict[str, Any]]]:
-        return self.lists.get(list_id)
-
-
 class PolicyManager:
     """Combine policy parsing with list resolution."""
 
     def __init__(
         self,
-        policy_source: Any,
-        list_source: Any | None = None,
+        source: Any,
         *,
         from_xml: bool = False,
     ) -> None:
-        self.policy_source = policy_source
-        self.list_source = list_source if list_source is not None else policy_source
+        """Initialize PolicyManager.
+        
+        Args:
+            source: The source data (XML or JSON) containing policy, lists and configurations
+            from_xml: Whether the source is in XML format
+        """
+        self.source = source
         self.from_xml = from_xml
-        self.list_db = ListDatabase()
-        self.policy_parser = PolicyParser(policy_source, from_xml=from_xml)
+        self.lists = {}  # Dictionary to store list entries
+        self.policy_parser = PolicyParser(source, from_xml=from_xml)
 
     def parse_lists(self) -> List[Dict[str, Any]]:
-        parser = ListsParser(self.list_source, from_xml=self.from_xml)
+        """Parse and store list entries from source.
+        
+        Returns:
+            List of parsed list records
+        """
+        parser = ListsParser(self.source, from_xml=self.from_xml)
         records = parser.parse()
-        self.list_db.load(records)
+        # Store list entries in dictionary for quick lookup
+        for rec in records:
+            list_id = rec.get("list_id")
+            if list_id:
+                self.lists.setdefault(list_id, []).append(rec)
         return records
 
     def parse_configurations(self) -> List[Dict[str, Any]]:
-        parser = ConfigurationsParser(self.policy_source, from_xml=self.from_xml)
+        """Parse configuration entries from source.
+        
+        Returns:
+            List of parsed configuration records
+        """
+        parser = ConfigurationsParser(self.source, from_xml=self.from_xml)
         return parser.parse()
 
     def parse_policy(self) -> tuple:
+        """Parse policy entries and resolve list references.
+        
+        Returns:
+            Tuple of (rulegroups, rules) with resolved list references
+        """
         rulegroups, rules = self.policy_parser.parse()
         self._resolve(rulegroups)
         self._resolve(rules)
         return rulegroups, rules
 
     def _resolve(self, records: Iterable[Dict[str, Any]]) -> None:
+        """Resolve list references in policy records.
+        
+        Args:
+            records: Policy records to resolve list references in
+        """
         for rec in records:
             cond_raw = rec.get("condition_raw")
             if not isinstance(cond_raw, dict):
@@ -72,14 +83,19 @@ class PolicyManager:
             rec["lists_resolved"] = self._resolve_values(values)
 
     def _resolve_values(self, values: Any) -> Any:
+        """Resolve list references to actual list entries.
+        
+        Args:
+            values: List reference(s) to resolve
+            
+        Returns:
+            Resolved list entries or original value if not a list reference
+        """
         if isinstance(values, str):
-            return self.list_db.get(values) or values
+            return self.lists.get(values, values)
         if isinstance(values, (list, tuple)):
-            resolved = []
-            for val in values:
-                if isinstance(val, str) and val in self.list_db.lists:
-                    resolved.append(self.list_db.get(val))
-                else:
-                    resolved.append(val)
-            return resolved
+            return [
+                self.lists.get(val, val) if isinstance(val, str) else val
+                for val in values
+            ]
         return values

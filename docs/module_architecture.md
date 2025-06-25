@@ -60,6 +60,10 @@ graph TD
     - `configurations_parser.py`: 설정 파싱
     - `lists_parser.py`: 리스트 파싱
   - `policy_manager.py`: 정책 관리 총괄
+    - 정책, 리스트, 설정 데이터 파싱
+    - 리스트 참조 해석
+    - 메모리 캐싱
+    - [상세 문서](policy_manager.md)
   - `config.py`: 정책 관련 설정
 - **데이터 흐름**: Skyhigh API → 정책 파싱 → DB 저장
 
