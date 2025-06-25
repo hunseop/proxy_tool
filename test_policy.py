@@ -1,92 +1,49 @@
-"""정책 모듈 테스트
+"""정책 모듈 기본 동작 테스트 스크립트
 
-정책 조회 및 파싱 기능을 테스트합니다.
+네트워크나 데이터베이스 연결 없이 PolicyManager가 정상적으로 동작하는지 확인한다.
 """
 
-import logging
+import sys
+import types
 import json
-from policy_module.clients.skyhigh_client import SkyhighSWGClient
-from policy_module.config import Config, ProxyConfig
-from policy_module.policy_manager import PolicyManager
-from ppat_db.policy_db import PolicyDB, save_policy_to_db
+import logging
+from pathlib import Path
 
-# 로깅 설정
+# 외부 패키지가 없을 수 있으므로 더미 모듈을 준비한다.
+if "pandas" not in sys.modules:
+    mod = types.ModuleType("pandas")
+    mod.DataFrame = lambda *a, **k: None
+    sys.modules["pandas"] = mod
+
+if "xmltodict" not in sys.modules:
+    mod = types.ModuleType("xmltodict")
+    mod.parse = lambda s: {}
+    sys.modules["xmltodict"] = mod
+
+from policy_module.policy_manager import PolicyManager
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def test_policy_fetch(host: str, username: str, password: str):
-    """정책 조회 테스트
-    
-    Args:
-        host (str): 프록시 서버 IP
-        username (str): 사용자 이름
-        password (str): 비밀번호
-    """
+
+def run_policy_parse(sample_path: Path) -> bool:
+    """샘플 정책 파일을 읽어 PolicyManager 동작을 확인한다."""
     try:
-        # 프록시 설정 생성
-        proxy_config = ProxyConfig(
-            base_url=f"https://{host}",
-            username=username,
-            password=password,
-            is_main=True
-        )
-        config = Config(proxies=[proxy_config])
-        
-        # Skyhigh SWG 클라이언트 연결
-        logger.info(f"정책 서버 연결 테스트 시작: {host}")
-        client = SkyhighSWGClient(proxy_config)
-        
-        with client:
-            # Rule Set 목록 조회
-            logger.info("Rule Set 목록 조회 중...")
-            rulesets = client.list_rulesets(top_level_only=True)
-            if not rulesets:
-                logger.error("Rule Set이 없습니다")
-                return False
-            
-            # 첫 번째 Rule Set 내보내기
-            ruleset = rulesets[0]
-            logger.info(f"Rule Set 내보내기 중: {ruleset['title']}")
-            parser, policy_data = client.export_ruleset(
-                ruleset_id=ruleset['id'],
-                title=ruleset['title']
-            )
-            
-            # 정책 데이터 검증
-            if not policy_data:
-                logger.error("정책 데이터가 비어있습니다")
-                return False
-                
-            # 정책 저장 테스트
-            logger.info("정책 저장 테스트 중...")
-            save_policy_to_db(policy_data)
-            
-            # 정책 검색 테스트
-            logger.info("정책 검색 테스트 중...")
-            with PolicyDB() as db:
-                policies = db.list_policies()
-                logger.info(f"저장된 정책 수: {len(policies)}")
-                
-                # 샘플 정책 출력
-                if policies:
-                    sample = policies[0]
-                    logger.info(f"샘플 정책: {json.dumps(sample, indent=2, ensure_ascii=False)}")
-            
-            logger.info("모든 테스트 완료")
-            return True
-            
-    except Exception as e:
-        logger.error(f"테스트 실패: {str(e)}")
+        with open(sample_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        pm = PolicyManager(data, from_xml=False)
+        lists = pm.parse_lists()
+        groups, rules = pm.parse_policy()
+        logger.info("리스트 개수 %s", len(lists))
+        logger.info("RuleGroup 개수 %s", len(groups))
+        logger.info("Rule 개수 %s", len(rules))
+        return True
+    except Exception as exc:
+        logger.error("테스트 실패: %s", exc)
         return False
 
+
 if __name__ == "__main__":
-    # 테스트할 프록시 서버 정보
-    TEST_PROXY = "192.168.1.10"  # 실제 프록시 IP로 변경
-    TEST_USERNAME = "admin"  # 실제 사용자 이름으로 변경
-    TEST_PASSWORD = "password"  # 실제 비밀번호로 변경
-    
-    success = test_policy_fetch(TEST_PROXY, TEST_USERNAME, TEST_PASSWORD)
-    if success:
-        print("✅ 테스트 성공")
-    else:
-        print("❌ 테스트 실패") 
+    SAMPLE = Path("sample_data/policy_combined.json")
+    success = run_policy_parse(SAMPLE)
+    print("✅ 테스트 성공" if success else "❌ 테스트 실패")
