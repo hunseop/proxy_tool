@@ -1,10 +1,10 @@
 """Policy parsing results database utilities."""
 
 import json
-from typing import Any
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean, JSON, create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 from policy_module.policy_manager import PolicyManager
 
@@ -18,7 +18,16 @@ class PolicyGroup(Base):
     group_id = Column(String(100), unique=True)
     name = Column(String(200))
     path = Column(String(500))
-    raw = Column(Text)
+    description = Column(Text)
+    enabled = Column(Boolean, default=True)
+    order_number = Column(Integer)
+    parent_group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    conditions = relationship("PolicyCondition", back_populates="group")
+    rules = relationship("PolicyRule", back_populates="group")
+    parent_group = relationship("PolicyGroup", remote_side=[group_id])
 
 
 class PolicyRule(Base):
@@ -27,26 +36,42 @@ class PolicyRule(Base):
     id = Column(Integer, primary_key=True)
     rule_id = Column(String(100), unique=True)
     name = Column(String(200))
+    group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
     group_path = Column(String(500))
-    raw = Column(Text)
+    description = Column(Text)
+    enabled = Column(Boolean, default=True)
+    order_number = Column(Integer)
+    action = Column(String(100))
+    action_options = Column(JSON)  # 액션 관련 추가 옵션
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    group = relationship("PolicyGroup", back_populates="rules")
+    conditions = relationship("PolicyCondition", back_populates="rule")
 
 
 class PolicyCondition(Base):
     __tablename__ = "policy_conditions"
 
     id = Column(Integer, primary_key=True)
-    rule_id = Column(String(100))
-    group_id = Column(String(100))
-    parent_id = Column(Integer, ForeignKey("policy_conditions.id"), nullable=True)
+    rule_id = Column(String(100), ForeignKey("policy_rules.rule_id"))
+    group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
+    parent_id = Column(Integer, ForeignKey("policy_conditions.id"))
     index = Column(Integer)
     prefix = Column(String(50))
     open_bracket = Column(Integer, default=0)
     close_bracket = Column(Integer, default=0)
     property = Column(String(200))
     operator = Column(String(100))
-    values = Column(Text)
+    values = Column(JSON)  # property_values를 JSON으로 저장
     result = Column(String(100))
-    raw = Column(Text)
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    rule = relationship("PolicyRule", back_populates="conditions")
+    group = relationship("PolicyGroup", back_populates="conditions")
+    parent_condition = relationship("PolicyCondition", remote_side=[id])
+    list_mappings = relationship("ConditionListMap", back_populates="condition")
 
 
 class ConditionListMap(Base):
@@ -54,34 +79,47 @@ class ConditionListMap(Base):
 
     id = Column(Integer, primary_key=True)
     condition_id = Column(Integer, ForeignKey("policy_conditions.id"))
-    list_id = Column(String(100))
+    list_id = Column(String(100), ForeignKey("policy_lists.list_id"))
+
+    # 관계 설정
+    condition = relationship("PolicyCondition", back_populates="list_mappings")
+    list = relationship("PolicyList", back_populates="condition_mappings")
 
 
 class PolicyList(Base):
     __tablename__ = "policy_lists"
 
     id = Column(Integer, primary_key=True)
-    list_id = Column(String(100))
+    list_id = Column(String(100), unique=True)
     entry_id = Column(String(100))
     value = Column(Text)
     name = Column(String(200))
     type_id = Column(String(100))
     classifier = Column(String(100))
     description = Column(Text)
+    metadata = Column(JSON)  # 추가 메타데이터
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    condition_mappings = relationship("ConditionListMap", back_populates="list")
 
 
 class PolicyConfiguration(Base):
     __tablename__ = "policy_configurations"
 
     id = Column(Integer, primary_key=True)
-    configuration_id = Column(String(100))
+    configuration_id = Column(String(100), unique=True)
     name = Column(String(200))
     version = Column(String(50))
     mwg_version = Column(String(50))
     template_id = Column(String(100))
     target_id = Column(String(100))
     description = Column(Text)
-    raw = Column(Text)
+    metadata = Column(JSON)  # 추가 메타데이터
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    properties = relationship("ConfigurationProperty", back_populates="configuration")
 
 
 class ConfigurationProperty(Base):
@@ -92,8 +130,13 @@ class ConfigurationProperty(Base):
     key = Column(String(200))
     value = Column(Text)
     type = Column(String(100))
-    encrypted = Column(String(10))
+    encrypted = Column(Boolean, default=False)
     list_type = Column(String(100))
+    metadata = Column(JSON)  # 추가 메타데이터
+    raw = Column(JSON)  # 원본 데이터 전체 저장
+
+    # 관계 설정
+    configuration = relationship("PolicyConfiguration", back_populates="properties")
 
 
 engine = create_engine("sqlite:///policy.db")
