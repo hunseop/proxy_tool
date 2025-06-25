@@ -4,7 +4,14 @@
 """
 
 import logging
+import os
 import json
+import pytest
+
+pytest.importorskip("requests")
+pytest.importorskip("pandas")
+pytest.importorskip("xmltodict")
+
 from policy_module.clients.skyhigh_client import SkyhighSWGClient
 from policy_module.config import Config, ProxyConfig
 from policy_module.policy_manager import PolicyManager
@@ -14,7 +21,7 @@ from ppat_db.policy_db import PolicyDB, save_policy_to_db
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def test_policy_fetch(host: str, username: str, password: str):
+def test_policy_fetch(host: str, username: str, password: str) -> bool:
     """정책 조회 테스트
     
     Args:
@@ -78,6 +85,16 @@ def test_policy_fetch(host: str, username: str, password: str):
     except Exception as e:
         logger.error(f"테스트 실패: {str(e)}")
         return False
+
+
+def test_policy():
+    """환경 변수에 지정된 프록시에서 정책을 조회한다."""
+    host = os.getenv("TEST_PROXY")
+    username = os.getenv("TEST_USERNAME")
+    password = os.getenv("TEST_PASSWORD")
+    if not (host and username and password):
+        pytest.skip("proxy credentials not set")
+    assert test_policy_fetch(host, username, password)
 
 if __name__ == "__main__":
     # 테스트할 프록시 서버 정보
