@@ -67,8 +67,7 @@ store.store_from_source(content, from_xml=False)
 class PolicyData:
     lists: List[Dict[str, Any]]          # 리스트 데이터
     configurations: List[Dict[str, Any]]  # 설정 데이터
-    rules: List[Dict[str, Any]]          # 규칙 데이터
-    groups: List[Dict[str, Any]]         # 그룹 데이터
+    items: List[Dict[str, Any]]          # 그룹/규칙 통합 데이터
 ```
 
 ## 데이터베이스 테이블
@@ -77,8 +76,7 @@ class PolicyData:
 |--------|------|
 | `policy_lists` | 정책 리스트 데이터 |
 | `policy_configurations` | 정책 설정 데이터 |
-| `policy_groups` | 정책 그룹 데이터 |
-| `policy_rules` | 정책 규칙 데이터 |
+| `policy_items` | 그룹/규칙 통합 데이터 |
 
 ## 에러 처리
 
