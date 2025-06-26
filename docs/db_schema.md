@@ -4,8 +4,7 @@
 
 | 테이블 | 설명 |
 | ------ | ---- |
-| `policy_groups` | 정책 그룹 정보. 그룹 ID, 이름, 경로, 설명, 활성화 상태, 순서 등을 저장합니다. 계층 구조를 위한 `parent_group_id`를 포함하며, 원본 데이터는 `raw` JSON 필드에 저장됩니다. |
-| `policy_rules` | 개별 룰 정보. 룰 ID, 이름, 소속 그룹 경로, 설명, 활성화 상태, 순서, 액션 정보를 포함합니다. 액션 관련 추가 옵션은 `action_options` JSON 필드에, 원본 데이터는 `raw` JSON 필드에 저장됩니다. |
+| `policy_items` | 그룹과 룰을 통합한 항목 정보. ID, 유형(`group`/`rule`), 경로, 설명, 액션 정보 등을 포함하며 원본 데이터는 `raw` JSON 필드에 저장됩니다. |
 | `policy_conditions` | 그룹과 룰의 조건을 저장합니다. `rule_id` 또는 `group_id`로 소속을 구분하며, 중첩 구조를 위해 `parent_id`를 사용합니다. 괄호, 연산자, 속성값 등이 저장되며, 복잡한 속성값은 `values` JSON 필드에, 원본 데이터는 `raw` JSON 필드에 저장됩니다. |
 | `policy_lists` | 정책에서 참조하는 객체 리스트 항목을 저장합니다. 리스트 ID, 항목 ID, 값, 이름, 타입, 분류자, 설명을 포함하며, 추가 메타데이터는 `metadata` JSON 필드에, 원본 데이터는 `raw` JSON 필드에 저장됩니다. |
 | `condition_list_map` | 조건과 리스트 간의 다대다 관계를 매핑합니다. `condition_id`와 `list_id`로 연결됩니다. |
@@ -16,10 +15,7 @@
 
 ```mermaid
 erDiagram
-    policy_groups ||--o{ policy_groups : "parent-child"
-    policy_groups ||--o{ policy_rules : "contains"
-    policy_groups ||--o{ policy_conditions : "has"
-    policy_rules ||--o{ policy_conditions : "has"
+    policy_items ||--o{ policy_conditions : "has"
     policy_conditions ||--o{ policy_conditions : "parent-child"
     policy_conditions ||--o{ condition_list_map : "references"
     policy_lists ||--o{ condition_list_map : "referenced by"

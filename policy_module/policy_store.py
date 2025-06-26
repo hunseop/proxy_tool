@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from .clients.skyhigh_client import SkyhighSWGClient
 from .policy_manager import PolicyManager
 from ppat_db.policy_db import (
-    PolicyList, PolicyConfiguration, 
-    PolicyGroup, PolicyRule
+    PolicyList, PolicyConfiguration,
+    PolicyItem
 )
 
 
@@ -21,8 +21,7 @@ class PolicyData:
     """정책 데이터 컨테이너"""
     lists: List[Dict[str, Any]]
     configurations: List[Dict[str, Any]]
-    rules: List[Dict[str, Any]]
-    groups: List[Dict[str, Any]]
+    items: List[Dict[str, Any]]
 
 
 class PolicyStore:
@@ -70,8 +69,7 @@ class PolicyStore:
         data = PolicyData(
             lists=manager.parse_lists(),
             configurations=manager.parse_configurations(),
-            groups=manager.parse_policy()[0],
-            rules=manager.parse_policy()[1]
+            items=manager.parse_policy(),
         )
         
         # 2. 단일 트랜잭션으로 저장
@@ -98,13 +96,10 @@ class PolicyStore:
         for config in data.configurations:
             self.session.add(PolicyConfiguration(**config))
             
-        for group in data.groups:
-            self.session.add(PolicyGroup(**group))
-            
-        for rule in data.rules:
-            self.session.add(PolicyRule(**rule))
+        for item in data.items:
+            self.session.add(PolicyItem(**item))
 
     def _clear_existing_data(self) -> None:
         """기존 데이터 삭제"""
-        for table in [PolicyList, PolicyConfiguration, PolicyGroup, PolicyRule]:
-            self.session.query(table).delete() 
+        for table in [PolicyList, PolicyConfiguration, PolicyItem]:
+            self.session.query(table).delete()

@@ -11,51 +11,36 @@ from policy_module.policy_manager import PolicyManager
 Base = declarative_base()
 
 
-class PolicyGroup(Base):
-    __tablename__ = "policy_groups"
+class PolicyItem(Base):
+    __tablename__ = "policy_items"
 
     id = Column(Integer, primary_key=True)
-    group_id = Column(String(100), unique=True)
+    item_id = Column(String(100), unique=True)
+    item_type = Column(String(20))  # "group" 또는 "rule"
     name = Column(String(200))
     path = Column(String(500))
     description = Column(Text)
     enabled = Column(Boolean, default=True)
     order_number = Column(Integer)
-    parent_group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
-    raw = Column(JSON)  # 원본 데이터 전체 저장
-
-    # 관계 설정
-    conditions = relationship("PolicyCondition", back_populates="group")
-    rules = relationship("PolicyRule", back_populates="group")
-    parent_group = relationship("PolicyGroup", remote_side=[group_id])
-
-
-class PolicyRule(Base):
-    __tablename__ = "policy_rules"
-
-    id = Column(Integer, primary_key=True)
-    rule_id = Column(String(100), unique=True)
-    name = Column(String(200))
-    group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
-    group_path = Column(String(500))
-    description = Column(Text)
-    enabled = Column(Boolean, default=True)
-    order_number = Column(Integer)
     action = Column(String(100))
-    action_options = Column(JSON)  # 액션 관련 추가 옵션
+    action_options = Column(JSON)
+    default_rights = Column(String(100))
+    cycle_request = Column(String(100))
+    cycle_response = Column(String(100))
+    cycle_embedded_object = Column(String(100))
+    cloud_synced = Column(String(100))
+    ac_elements = Column(Text)
     raw = Column(JSON)  # 원본 데이터 전체 저장
 
     # 관계 설정
-    group = relationship("PolicyGroup", back_populates="rules")
-    conditions = relationship("PolicyCondition", back_populates="rule")
+    conditions = relationship("PolicyCondition", back_populates="item")
 
 
 class PolicyCondition(Base):
     __tablename__ = "policy_conditions"
 
     id = Column(Integer, primary_key=True)
-    rule_id = Column(String(100), ForeignKey("policy_rules.rule_id"))
-    group_id = Column(String(100), ForeignKey("policy_groups.group_id"))
+    item_id = Column(String(100), ForeignKey("policy_items.item_id"))
     parent_id = Column(Integer, ForeignKey("policy_conditions.id"))
     index = Column(Integer)
     prefix = Column(String(50))
@@ -68,8 +53,7 @@ class PolicyCondition(Base):
     raw = Column(JSON)  # 원본 데이터 전체 저장
 
     # 관계 설정
-    rule = relationship("PolicyRule", back_populates="conditions")
-    group = relationship("PolicyGroup", back_populates="conditions")
+    item = relationship("PolicyItem", back_populates="conditions")
     parent_condition = relationship("PolicyCondition", remote_side=[id])
     list_mappings = relationship("ConditionListMap", back_populates="condition")
 
@@ -153,7 +137,7 @@ def save_policy_to_db(
     """Parse policy and list data then store to the local DB."""
     manager = PolicyManager(policy_source, list_source, from_xml=from_xml)
     list_records = manager.parse_lists()
-    groups, rules = manager.parse_policy()
+    items = manager.parse_policy()
     configs = manager.parse_configurations()
 
     with Session() as session:
@@ -169,31 +153,41 @@ def save_policy_to_db(
             )
             session.add(rec)
 
-        current_group_id: str | None = None
-        group_condition_index = 0
-        group_parent_map: dict[int, int] = {}
-        for g in groups:
-            if g.get("id"):
-                current_group_id = g.get("id")
-                record = PolicyGroup(
-                    group_id=current_group_id,
-                    name=g.get("name"),
-                    path=g.get("path"),
-                    raw=json.dumps(g, ensure_ascii=False),
+        current_item_id: str | None = None
+        condition_index = 0
+        parent_map: dict[int, int] = {}
+        for rec in items:
+            if rec.get("id"):
+                current_item_id = rec.get("id")
+                record = PolicyItem(
+                    item_id=current_item_id,
+                    item_type=rec.get("type"),
+                    name=rec.get("name"),
+                    path=rec.get("path") or rec.get("group_path"),
+                    description=rec.get("description"),
+                    enabled=rec.get("enabled"),
+                    action=rec.get("actionContainer_raw"),
+                    action_options=rec.get("immediateActions_raw"),
+                    default_rights=rec.get("defaultRights"),
+                    cycle_request=rec.get("cycleRequest"),
+                    cycle_response=rec.get("cycleResponse"),
+                    cycle_embedded_object=rec.get("cycleEmbeddedObject"),
+                    cloud_synced=rec.get("cloudSynced"),
+                    ac_elements=rec.get("acElements"),
+                    raw=json.dumps(rec, ensure_ascii=False),
                 )
                 session.merge(record)
-                group_condition_index = 0
-                group_parent_map = {}
-            if current_group_id is None:
+                condition_index = 0
+                parent_map = {}
+            if current_item_id is None:
                 continue
-            cond = g.get("condition_raw") or {}
-            idx = g.get("condition_index") or (group_condition_index + 1)
-            group_condition_index = idx
+            cond = rec.get("condition_raw") or {}
+            idx = rec.get("condition_index") or (condition_index + 1)
+            condition_index = idx
             cond_record = PolicyCondition(
-                rule_id=None,
-                group_id=current_group_id,
+                item_id=current_item_id,
                 index=idx,
-                parent_id=group_parent_map.get(g.get("condition_parent_index")),
+                parent_id=parent_map.get(rec.get("condition_parent_index")),
                 prefix=cond.get("prefix"),
                 open_bracket=int(cond.get("open_bracket", 0)),
                 close_bracket=int(cond.get("close_bracket", 0)),
@@ -207,67 +201,19 @@ def save_policy_to_db(
             )
             session.add(cond_record)
             session.flush()
-            group_parent_map[idx] = cond_record.id
+            parent_map[idx] = cond_record.id
             values = cond.get("property_values")
             list_ids: list[str] = []
-            if isinstance(values, str) and values in manager.list_db.lists:
+            if isinstance(values, str) and values in manager.lists:
                 list_ids.append(values)
             elif isinstance(values, (list, tuple)):
                 for v in values:
-                    if isinstance(v, str) and v in manager.list_db.lists:
+                    if isinstance(v, str) and v in manager.lists:
                         list_ids.append(v)
             for lid in list_ids:
                 session.add(
                     ConditionListMap(condition_id=cond_record.id, list_id=lid)
                 )
-
-        current_rule_id: str | None = None
-        condition_index = 0
-        rule_parent_map: dict[int, int] = {}
-        for r in rules:
-            if r.get("id"):
-                current_rule_id = r.get("id")
-                record = PolicyRule(
-                    rule_id=current_rule_id,
-                    name=r.get("name"),
-                    group_path=r.get("group_path"),
-                    raw=json.dumps(r, ensure_ascii=False),
-                )
-                session.merge(record)
-                condition_index = 0
-                rule_parent_map = {}
-            if current_rule_id is None:
-                continue
-            cond = r.get("condition_raw") or {}
-            idx = r.get("condition_index") or (condition_index + 1)
-            condition_index = idx
-            cond_record = PolicyCondition(
-                rule_id=current_rule_id,
-                group_id=None,
-                index=idx,
-                parent_id=rule_parent_map.get(r.get("condition_parent_index")),
-                prefix=cond.get("prefix"),
-                open_bracket=int(cond.get("open_bracket", 0)),
-                close_bracket=int(cond.get("close_bracket", 0)),
-                property=cond.get("property"),
-                operator=cond.get("operator"),
-                values=json.dumps(cond.get("property_values"), ensure_ascii=False) if cond.get("property_values") is not None else None,
-                result=cond.get("expression_value"),
-                raw=json.dumps(cond, ensure_ascii=False),
-            )
-            session.add(cond_record)
-            session.flush()
-            rule_parent_map[idx] = cond_record.id
-            values = cond.get("property_values")
-            list_ids: list[str] = []
-            if isinstance(values, str) and values in manager.list_db.lists:
-                list_ids.append(values)
-            elif isinstance(values, (list, tuple)):
-                for v in values:
-                    if isinstance(v, str) and v in manager.list_db.lists:
-                        list_ids.append(v)
-            for lid in list_ids:
-                session.add(ConditionListMap(condition_id=cond_record.id, list_id=lid))
 
         for conf in configs:
             cfg = PolicyConfiguration(
