@@ -4,9 +4,22 @@
 API와 파일 소스 모두에 대한 예제를 포함합니다.
 """
 
+import os
+import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from typing import Dict, Any
+
+# 로컬 모듈 임포트를 위한 경로 설정
+ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+while ROOT_DIR and not os.path.isdir(os.path.join(ROOT_DIR, "policy_module")):
+    parent = os.path.dirname(ROOT_DIR)
+    if parent == ROOT_DIR:
+        break
+    ROOT_DIR = parent
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 
 from policy_module.policy_store import PolicyStore
 
@@ -41,7 +54,17 @@ def store_from_api(proxy_config: Dict[str, str], db_url: str = 'sqlite:///polici
         session.close()
 
 
-def store_from_files(xml_path: str = None, json_path: str = None, db_url: str = 'sqlite:///policies.db') -> None:
+DEFAULT_XML_PATH = os.path.join(ROOT_DIR, 'sample_data', 'policy_combined.json')
+DEFAULT_JSON_PATH = os.path.join(
+    ROOT_DIR, 'sample_data', 'policy_with_configurations.json'
+)
+
+
+def store_from_files(
+    xml_path: str | None = DEFAULT_XML_PATH,
+    json_path: str | None = DEFAULT_JSON_PATH,
+    db_url: str = 'sqlite:///policies.db',
+) -> None:
     """파일에서 정책 데이터를 가져와서 저장하는 예제
     
     Args:
@@ -92,7 +115,4 @@ if __name__ == '__main__':
     store_from_api(proxy_settings)
     
     # 2. 파일에서 데이터 저장
-    store_from_files(
-        xml_path='sample_data/policy_combined.json',
-        json_path='sample_data/policy_with_configurations.json'
-    ) 
+    store_from_files()
