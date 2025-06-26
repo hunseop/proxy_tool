@@ -7,12 +7,13 @@ API나 파일 소스로부터 데이터를 가져와 파싱하고 저장합니�
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from .clients.skyhigh_client import SkyhighSWGClient
 from .policy_manager import PolicyManager
 from ppat_db.policy_db import (
     PolicyList, PolicyConfiguration,
-    PolicyItem
+    PolicyItem, PolicyCondition, ConditionListMap
 )
 
 
@@ -89,15 +90,66 @@ class PolicyStore:
         # 기존 데이터 삭제
         self._clear_existing_data()
         
-        # 새 데이터 저장
+        # 리스트 데이터를 list_id로 그룹화하여 저장
+        list_groups: Dict[str, List[Dict[str, Any]]] = {}
         for list_item in data.lists:
-            self.session.add(PolicyList(**list_item))
+            list_id = list_item.get("list_id")
+            if list_id:
+                list_groups.setdefault(list_id, []).append(list_item)
+        
+        # 각 리스트 그룹을 저장
+        for list_id, items in list_groups.items():
+            # 첫 번째 항목의 메타데이터 사용
+            first_item = items[0]
+            list_record = PolicyList(
+                list_id=list_id,
+                entry_id=first_item.get("@id"),
+                value=first_item.get("value"),
+                name=first_item.get("list_name"),
+                type_id=first_item.get("list_type_id"),
+                classifier=first_item.get("list_classifier"),
+                description=first_item.get("list_description"),
+                raw={"entries": items}  # 모든 엔트리를 raw 필드에 저장
+            )
+            self.session.add(list_record)
             
+        # 설정 데이터 저장
         for config in data.configurations:
-            self.session.add(PolicyConfiguration(**config))
+            config_record = PolicyConfiguration(
+                configuration_id=config.get("id"),
+                name=config.get("name"),
+                version=config.get("version"),
+                mwg_version=config.get("mwg_version"),
+                template_id=config.get("template_id"),
+                target_id=config.get("target_id"),
+                description=config.get("description"),
+                raw=config  # 원본 데이터 저장
+            )
+            self.session.add(config_record)
             
+        # 정책 아이템 데이터 저장
         for item in data.items:
-            self.session.add(PolicyItem(**item))
+            if not item.get("id"):  # 조건 데이터는 건너뛰기
+                continue
+                
+            item_record = PolicyItem(
+                item_id=item.get("id"),
+                item_type=item.get("type"),
+                name=item.get("name"),
+                path=item.get("path") or item.get("group_path"),
+                description=item.get("description"),
+                enabled=item.get("enabled"),
+                action=item.get("actionContainer_raw"),
+                action_options=item.get("immediateActions_raw"),
+                default_rights=item.get("defaultRights"),
+                cycle_request=item.get("cycleRequest"),
+                cycle_response=item.get("cycleResponse"),
+                cycle_embedded_object=item.get("cycleEmbeddedObject"),
+                cloud_synced=item.get("cloudSynced"),
+                ac_elements=item.get("acElements"),
+                raw=item  # 원본 데이터 저장
+            )
+            self.session.add(item_record)
 
     def _clear_existing_data(self) -> None:
         """기존 데이터 삭제"""
