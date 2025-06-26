@@ -8,7 +8,7 @@ import os
 import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from typing import Dict, Any
+
 
 # 로컬 모듈 임포트를 위한 경로 설정
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -22,16 +22,14 @@ if ROOT_DIR not in sys.path:
 
 
 from policy_module.policy_store import PolicyStore
+from policy_module.config import ProxyConfig
 
 
-def store_from_api(proxy_config: Dict[str, str], db_url: str = 'sqlite:///policies.db') -> None:
+def store_from_api(proxy_config: ProxyConfig, db_url: str = 'sqlite:///policies.db') -> None:
     """API에서 정책 데이터를 가져와서 저장하는 예제
-    
+
     Args:
-        proxy_config: 프록시 설정 정보
-            - host: 프록시 호스트
-            - username: 사용자 이름
-            - password: 비밀번호
+        proxy_config: 프록시 설정
         db_url: 데이터베이스 연결 URL
     """
     
@@ -105,13 +103,13 @@ def store_from_files(
 
 if __name__ == '__main__':
     # 사용 예시
-    
+
     # 1. API에서 데이터 저장
-    proxy_settings = {
-        'host': 'proxy.example.com',
-        'username': 'your_username',
-        'password': 'your_password'
-    }
+    proxy_settings = ProxyConfig(
+        base_url='proxy.example.com',
+        username='your_username',
+        password='your_password'
+    )
     store_from_api(proxy_settings)
     
     # 2. 파일에서 데이터 저장
