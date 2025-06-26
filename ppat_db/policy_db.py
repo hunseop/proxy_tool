@@ -97,7 +97,7 @@ class PolicyList(Base):
     type_id = Column(String(100))
     classifier = Column(String(100))
     description = Column(Text)
-    metadata = Column(JSON)  # 추가 메타데이터
+    metadata_json = Column("metadata", JSON)  # 추가 메타데이터
     raw = Column(JSON)  # 원본 데이터 전체 저장
 
     # 관계 설정
@@ -115,7 +115,7 @@ class PolicyConfiguration(Base):
     template_id = Column(String(100))
     target_id = Column(String(100))
     description = Column(Text)
-    metadata = Column(JSON)  # 추가 메타데이터
+    metadata_json = Column("metadata", JSON)  # 추가 메타데이터
     raw = Column(JSON)  # 원본 데이터 전체 저장
 
     # 관계 설정
@@ -132,7 +132,7 @@ class ConfigurationProperty(Base):
     type = Column(String(100))
     encrypted = Column(Boolean, default=False)
     list_type = Column(String(100))
-    metadata = Column(JSON)  # 추가 메타데이터
+    metadata_json = Column("metadata", JSON)  # 추가 메타데이터
     raw = Column(JSON)  # 원본 데이터 전체 저장
 
     # 관계 설정

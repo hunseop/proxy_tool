@@ -31,6 +31,8 @@ erDiagram
 1. **원본 데이터 보존**
    - 모든 테이블이 `raw` JSON 필드를 통해 원본 데이터를 그대로 보존
    - 추가 메타데이터를 위한 `metadata` JSON 필드 제공
+   - SQLAlchemy Declarative API의 예약어 충돌을 피하기 위해
+     모델 속성은 `metadata_json`으로 정의되어 있으나 실제 컬럼명은 `metadata`로 유지됨
 
 2. **계층 구조 지원**
    - 그룹의 계층 구조 (`parent_group_id`)
