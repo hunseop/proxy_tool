@@ -33,7 +33,7 @@ manager = PolicyManager(source_data, from_xml=True)
 # 2. 데이터 파싱
 lists = manager.parse_lists()
 configs = manager.parse_configurations()
-rulegroups, rules = manager.parse_policy()
+records = manager.parse_policy()
 ```
 
 ## 데이터 구조
@@ -91,7 +91,7 @@ classDiagram
         +policy_parser: PolicyParser
         +parse_lists() List
         +parse_configurations() List
-        +parse_policy() tuple
+        +parse_policy() List
         -_resolve(records) void
         -_resolve_values(values) Any
     }

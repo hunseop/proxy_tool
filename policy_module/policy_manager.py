@@ -56,16 +56,15 @@ class PolicyManager:
         parser = ConfigurationsParser(self.source, from_xml=self.from_xml)
         return parser.parse()
 
-    def parse_policy(self) -> tuple:
-        """Parse policy entries and resolve list references.
-        
+    def parse_policy(self) -> List[Dict[str, Any]]:
+        """Parse policy items and resolve list references.
+
         Returns:
-            Tuple of (rulegroups, rules) with resolved list references
+            List of unified policy item records
         """
-        rulegroups, rules = self.policy_parser.parse()
-        self._resolve(rulegroups)
-        self._resolve(rules)
-        return rulegroups, rules
+        records = self.policy_parser.parse()
+        self._resolve(records)
+        return records
 
     def _resolve(self, records: Iterable[Dict[str, Any]]) -> None:
         """Resolve list references in policy records.
