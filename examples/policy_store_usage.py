@@ -19,7 +19,6 @@ def store_from_api(proxy_config: Dict[str, str], db_url: str = 'sqlite:///polici
             - host: 프록시 호스트
             - username: 사용자 이름
             - password: 비밀번호
-            - api_key: API 키
         db_url: 데이터베이스 연결 URL
     """
     
@@ -88,8 +87,7 @@ if __name__ == '__main__':
     proxy_settings = {
         'host': 'proxy.example.com',
         'username': 'your_username',
-        'password': 'your_password',
-        'api_key': 'your_api_key'
+        'password': 'your_password'
     }
     store_from_api(proxy_settings)
     
