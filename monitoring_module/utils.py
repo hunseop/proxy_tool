@@ -60,4 +60,35 @@ def validate_resource_data(data: dict) -> bool:
         return False
     except Exception as e:
         logger.error(f"데이터 검증 중 오류 발생: {e}")
-        return False 
+        return False
+
+
+def format_bytes(num: int) -> str:
+    """바이트 단위를 읽기 쉬운 문자열로 변환"""
+    step_unit = 1024.0
+    for unit in ["B", "KB", "MB", "GB", "TB", "PB"]:
+        if num < step_unit:
+            return f"{num:.2f}{unit}"
+        num /= step_unit
+    return f"{num:.2f}PB"
+
+
+def parse_size(text: str) -> int:
+    """예: '100MB' -> 104857600"""
+    units = {
+        'B': 1,
+        'KB': 1024,
+        'MB': 1024 ** 2,
+        'GB': 1024 ** 3,
+        'TB': 1024 ** 4,
+        'PB': 1024 ** 5,
+    }
+    text = text.strip().upper()
+    for unit, factor in units.items():
+        if text.endswith(unit):
+            try:
+                value = float(text[:-len(unit)])
+                return int(value * factor)
+            except ValueError:
+                break
+    raise ValueError(f"잘못된 크기 표현: {text}")
