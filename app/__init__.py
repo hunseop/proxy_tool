@@ -1,10 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 import os
 from .extensions import db, socketio
 
 
 def create_app(config_object=None):
-    app = Flask(__name__)
+    app = Flask(__name__, template_folder='../templates')
     # 기본 설정
     app.config.setdefault('SECRET_KEY', 'secret')
     app.config.setdefault('SQLALCHEMY_DATABASE_URI', 'sqlite:///instance/ppat.db')
@@ -26,6 +26,10 @@ def create_app(config_object=None):
 
     @app.route('/')
     def index():
+        return render_template('index.html')
+
+    @app.route('/api')
+    def api_index():
         return jsonify({'message': 'PPAT API running'})
 
     return app
