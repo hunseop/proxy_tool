@@ -5,13 +5,13 @@
 
 from .config import Config as MonitoringConfig
 from .resource import ResourceMonitor
-from .session import SessionMonitor
+from .session import SessionManager
 from .utils import format_bytes, parse_size
 
 __all__ = [
     'MonitoringConfig',
     'ResourceMonitor',
-    'SessionMonitor',
+    'SessionManager',
     'format_bytes',
     'parse_size'
 ]

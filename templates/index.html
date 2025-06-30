@@ -1,760 +1,267 @@
+{% raw %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>프록시 정책 관리 시스템</title>
+    <title>PPAT 관리</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
-    <div id="app" class="container mx-auto px-4 py-8">
-        {% raw %}
-        <!-- 네비게이션 탭 -->
-        <div class="mb-4 border-b border-gray-200">
-            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
-                <li class="mr-2" v-for="tab in tabs" :key="tab.id">
-                    <a href="#" 
-                       :class="['inline-block p-4 rounded-t-lg', 
-                               activeTab === tab.id 
-                               ? 'text-blue-600 border-b-2 border-blue-600' 
-                               : 'hover:text-gray-600 hover:border-gray-300']"
-                       @click.prevent="activeTab = tab.id">
-                        {{ tab.name }}
-                    </a>
-                </li>
-            </ul>
+<div id="app" class="container mx-auto p-4">
+    <!-- 네비게이션 -->
+    <div class="mb-4">
+        <button class="mr-2" :class="tab==='proxy' ? 'font-bold' : ''" @click="tab='proxy'">프록시 관리</button>
+        <button class="mr-2" :class="tab==='resource' ? 'font-bold' : ''" @click="tab='resource'">리소스 모니터</button>
+        <button :class="tab==='session' ? 'font-bold' : ''" @click="tab='session'">세션 모니터</button>
+    </div>
+
+    <!-- 프록시 관리 -->
+    <div v-if="tab==='proxy'" class="space-y-8">
+        <!-- 그룹 관리 -->
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-2">그룹 관리</h2>
+            <form @submit.prevent="saveGroup" class="flex flex-wrap items-end space-x-2 mb-4">
+                <input v-model="groupForm.name" placeholder="이름" class="border p-1" required>
+                <input v-model="groupForm.description" placeholder="설명" class="border p-1 flex-grow">
+                <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">{{ groupForm.id ? '수정' : '추가' }}</button>
+                <button v-if="groupForm.id" type="button" @click="resetGroup" class="px-2 py-1">취소</button>
+            </form>
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-2 py-1 text-left">ID</th>
+                        <th class="px-2 py-1 text-left">이름</th>
+                        <th class="px-2 py-1 text-left">설명</th>
+                        <th class="px-2 py-1">서버수</th>
+                        <th class="px-2 py-1">작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="g in groups" :key="g.id" class="border-t">
+                        <td class="px-2 py-1">{{ g.id }}</td>
+                        <td class="px-2 py-1">{{ g.name }}</td>
+                        <td class="px-2 py-1">{{ g.description }}</td>
+                        <td class="px-2 py-1 text-center">{{ g.proxy_count }}</td>
+                        <td class="px-2 py-1 text-center space-x-1">
+                            <button @click="editGroup(g)" class="text-blue-600">수정</button>
+                            <button @click="deleteGroup(g.id)" class="text-red-600">삭제</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
-        <!-- 프록시 서버 관리 -->
-        <div v-if="activeTab === 'proxies'" class="space-y-6">
-            <!-- 프록시 그룹 섹션 -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">프록시 그룹</h2>
-                    <button @click="showAddGroupModal = true" 
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        그룹 추가
-                    </button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">설명</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">서버 수</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="group in proxyGroups" :key="group.id">
-                                <td class="px-6 py-4">{{ group.name }}</td>
-                                <td class="px-6 py-4">{{ group.description }}</td>
-                                <td class="px-6 py-4">{{ group.proxy_count }}</td>
-                                <td class="px-6 py-4">
-                                    <button @click="editGroup(group)" class="text-blue-600 hover:text-blue-900 mr-2">수정</button>
-                                    <button @click="deleteGroup(group.id)" class="text-red-600 hover:text-red-900">삭제</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 프록시 서버 섹션 -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">프록시 서버</h2>
-                    <button @click="showAddServerModal = true" 
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        서버 추가
-                    </button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP 주소</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">포트</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">그룹</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="server in proxyServers" :key="server.id">
-                                <td class="px-6 py-4">{{ server.name }}</td>
-                                <td class="px-6 py-4">{{ server.ip_address }}</td>
-                                <td class="px-6 py-4">{{ server.port }}</td>
-                                <td class="px-6 py-4">{{ server.group_name }}</td>
-                                <td class="px-6 py-4">
-                                    <span :class="['px-2 py-1 rounded text-sm', 
-                                                 server.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                        {{ server.enabled ? '활성' : '비활성' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <button @click="editServer(server)" class="text-blue-600 hover:text-blue-900 mr-2">수정</button>
-                                    <button @click="deleteServer(server.id)" class="text-red-600 hover:text-red-900">삭제</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- 정책 목록 -->
-        <div v-if="activeTab === 'policies'" class="bg-white p-6 rounded-lg shadow">
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center">
-                    <input type="text" v-model="searchQuery" 
-                           @input="searchPolicies"
-                           placeholder="정책 검색..." 
-                           class="border p-2 rounded mr-4">
-                </div>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">유형</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">경로</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <tr v-for="policy in policies" :key="policy.id" @click="showPolicyDetail(policy.item_id)" 
-                            class="hover:bg-gray-50 cursor-pointer">
-                            <td class="px-6 py-4">{{ policy.item_id }}</td>
-                            <td class="px-6 py-4">{{ policy.name }}</td>
-                            <td class="px-6 py-4">{{ policy.type }}</td>
-                            <td class="px-6 py-4">{{ policy.path }}</td>
-                            <td class="px-6 py-4">
-                                <span :class="['px-2 py-1 rounded text-sm', 
-                                             policy.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                    {{ policy.enabled ? '활성' : '비활성' }}
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-4 flex justify-center">
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button v-for="page in totalPages" 
-                            :key="page"
-                            @click="currentPage = page"
-                            :class="['relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                                    currentPage === page 
-                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' 
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50']">
-                        {{ page }}
-                    </button>
-                </nav>
-            </div>
-        </div>
-
-        <!-- 리스트 -->
-        <div v-if="activeTab === 'lists'" class="bg-white p-6 rounded-lg shadow">
-            <div class="overflow-x-auto">
-                <table class="min-w-full">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">유형</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">분류자</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">항목 수</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <tr v-for="list in lists" :key="list.id" class="hover:bg-gray-50 cursor-pointer">
-                            <td class="px-6 py-4">{{ list.list_id }}</td>
-                            <td class="px-6 py-4">{{ list.name }}</td>
-                            <td class="px-6 py-4">{{ list.type_id }}</td>
-                            <td class="px-6 py-4">{{ list.classifier }}</td>
-                            <td class="px-6 py-4">{{ list.entries.length }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- 설정 -->
-        <div v-if="activeTab === 'configurations'" class="space-y-6">
-            <!-- 프록시 설정 섹션 -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">프록시 설정</h2>
-                    <button @click="showAddServerModal = true" 
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        프록시 추가
-                    </button>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP 주소</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">포트</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="server in proxyServers" :key="server.id">
-                                <td class="px-6 py-4">{{ server.name }}</td>
-                                <td class="px-6 py-4">{{ server.ip_address }}</td>
-                                <td class="px-6 py-4">{{ server.port }}</td>
-                                <td class="px-6 py-4">
-                                    <span :class="['px-2 py-1 rounded text-sm', 
-                                                 server.enabled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                        {{ server.enabled ? '활성' : '비활성' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <button @click="editServer(server)" class="text-blue-600 hover:text-blue-900 mr-2">수정</button>
-                                    <button @click="deleteServer(server.id)" class="text-red-600 hover:text-red-900">삭제</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Main Appliance 섹션 -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Main Appliance</h2>
-                    <div class="space-x-2">
-                        <button @click="updateMainAppliancePolicy" 
-                                :disabled="isUpdating"
-                                class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:opacity-50">
-                            {{ isUpdating ? '업데이트 중...' : '정책 업데이트' }}
-                        </button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP 주소</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">마지막 업데이트</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">작업</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="server in mainAppliances" :key="server.id">
-                                <td class="px-6 py-4">{{ server.name }}</td>
-                                <td class="px-6 py-4">{{ server.ip_address }}</td>
-                                <td class="px-6 py-4">{{ formatDate(server.last_update) }}</td>
-                                <td class="px-6 py-4">
-                                    <span :class="['px-2 py-1 rounded text-sm', 
-                                                 getStatusClass(server.update_status)]">
-                                        {{ getStatusText(server.update_status) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <button @click="updateSingleMainAppliance(server)" 
-                                            :disabled="server.is_updating"
-                                            class="text-blue-600 hover:text-blue-900 mr-2 disabled:opacity-50">
-                                        {{ server.is_updating ? '업데이트 중...' : '업데이트' }}
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 일반 설정 섹션 -->
-            <div class="bg-white p-6 rounded-lg shadow">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">일반 설정</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">버전</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">설명</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="config in configurations" :key="config.id" class="hover:bg-gray-50 cursor-pointer">
-                                <td class="px-6 py-4">{{ config.configuration_id }}</td>
-                                <td class="px-6 py-4">{{ config.name }}</td>
-                                <td class="px-6 py-4">{{ config.version }}</td>
-                                <td class="px-6 py-4">{{ config.description }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- 모달 컴포넌트들 -->
-        <!-- 프록시 그룹 추가/수정 모달 -->
-        <div v-if="showAddGroupModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-                        {{ editingGroup ? '그룹 수정' : '새 그룹 추가' }}
-                    </h3>
-                    <div class="mt-2 space-y-4">
-                        <input type="text" v-model="groupForm.name" 
-                               placeholder="그룹 이름" 
-                               class="w-full border p-2 rounded">
-                        <input type="text" v-model="groupForm.description" 
-                               placeholder="설명" 
-                               class="w-full border p-2 rounded">
-                        <div class="flex justify-end space-x-2">
-                            <button @click="showAddGroupModal = false" 
-                                    class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
-                                취소
-                            </button>
-                            <button @click="saveGroup" 
-                                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                저장
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 프록시 서버 추가/수정 모달 -->
-        <div v-if="showAddServerModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-                        {{ editingServer ? '서버 수정' : '새 서버 추가' }}
-                    </h3>
-                    <div class="mt-2 space-y-4">
-                        <input type="text" v-model="serverForm.name" 
-                               placeholder="서버 이름" 
-                               class="w-full border p-2 rounded">
-                        <input type="text" v-model="serverForm.ip_address" 
-                               placeholder="IP 주소" 
-                               class="w-full border p-2 rounded">
-                        <input type="number" v-model="serverForm.port" 
-                               placeholder="포트" 
-                               class="w-full border p-2 rounded">
-                        <select v-model="serverForm.group_id" 
-                                class="w-full border p-2 rounded">
-                            <option value="">그룹 선택</option>
-                            <option v-for="group in proxyGroups" 
-                                    :key="group.id" 
-                                    :value="group.id">
-                                {{ group.name }}
-                            </option>
-                        </select>
-                        <div class="flex items-center">
-                            <input type="checkbox" v-model="serverForm.is_main" 
-                                   class="mr-2">
-                            <label>Main Appliance</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="checkbox" v-model="serverForm.enabled" 
-                                   class="mr-2">
-                            <label>활성화</label>
-                        </div>
-                        <div class="flex justify-end space-x-2">
-                            <button @click="showAddServerModal = false" 
-                                    class="bg-gray-200 px-4 py-2 rounded hover:bg-gray-300">
-                                취소
-                            </button>
-                            <button @click="saveServer" 
-                                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                저장
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- 서버 관리 -->
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-2">서버 관리</h2>
+            <form @submit.prevent="saveServer" class="flex flex-wrap items-end space-x-2 mb-4">
+                <input v-model="serverForm.name" placeholder="이름" class="border p-1" required>
+                <input v-model="serverForm.ip_address" placeholder="IP" class="border p-1" required>
+                <input v-model.number="serverForm.port" type="number" placeholder="포트" class="border p-1 w-24" required>
+                <select v-model.number="serverForm.group_id" class="border p-1">
+                    <option disabled value="">그룹 선택</option>
+                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                </select>
+                <label class="ml-2"><input type="checkbox" v-model="serverForm.is_main"> 메인</label>
+                <label class="ml-2"><input type="checkbox" v-model="serverForm.enabled"> 활성</label>
+                <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">{{ serverForm.id ? '수정' : '추가' }}</button>
+                <button v-if="serverForm.id" type="button" @click="resetServer" class="px-2 py-1">취소</button>
+            </form>
+            <table class="min-w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-2 py-1 text-left">ID</th>
+                        <th class="px-2 py-1 text-left">이름</th>
+                        <th class="px-2 py-1 text-left">IP</th>
+                        <th class="px-2 py-1">포트</th>
+                        <th class="px-2 py-1">그룹</th>
+                        <th class="px-2 py-1">상태</th>
+                        <th class="px-2 py-1">작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="s in servers" :key="s.id" class="border-t">
+                        <td class="px-2 py-1">{{ s.id }}</td>
+                        <td class="px-2 py-1">{{ s.name }}</td>
+                        <td class="px-2 py-1">{{ s.ip_address }}</td>
+                        <td class="px-2 py-1 text-center">{{ s.port }}</td>
+                        <td class="px-2 py-1">{{ s.group_name }}</td>
+                        <td class="px-2 py-1 text-center">{{ s.enabled ? '활성' : '비활성' }}</td>
+                        <td class="px-2 py-1 text-center space-x-1">
+                            <button @click="editServer(s)" class="text-blue-600">수정</button>
+                            <button @click="deleteServer(s.id)" class="text-red-600">삭제</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <script>
-        const { createApp, ref, onMounted, watch } = Vue
+    <!-- 리소스 모니터 -->
+    <div v-if="tab==='resource'" class="bg-white p-4 rounded shadow space-y-4">
+        <div class="flex flex-wrap items-end space-x-2">
+            <select v-model.number="filterGroup" class="border p-1">
+                <option value="">그룹 선택</option>
+                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+            </select>
+            <select v-model.number="filterServer" class="border p-1">
+                <option value="">서버 선택</option>
+                <option v-for="s in servers" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+            <input v-model.number="interval" type="number" class="border p-1 w-20" min="1">초
+            <button @click="setIntervalApi" class="px-2 py-1 border">주기 설정</button>
+            <button @click="startMonitoring" class="px-2 py-1 bg-blue-500 text-white">시작</button>
+            <button @click="stopMonitoring" class="px-2 py-1 bg-gray-300">중지</button>
+            <button @click="loadResources" class="px-2 py-1 border">새로고침</button>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-2 py-1">시간</th>
+                    <th class="px-2 py-1">서버</th>
+                    <th class="px-2 py-1">CPU %</th>
+                    <th class="px-2 py-1">Memory %</th>
+                    <th class="px-2 py-1">Unique</th>
+                    <th class="px-2 py-1">CC</th>
+                    <th class="px-2 py-1">CS</th>
+                    <th class="px-2 py-1">HTTP</th>
+                    <th class="px-2 py-1">HTTPS</th>
+                    <th class="px-2 py-1">FTP</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="r in resources" :key="r.id" class="border-t">
+                    <td class="px-2 py-1">{{ r.timestamp }}</td>
+                    <td class="px-2 py-1">{{ r.proxy_id }}</td>
+                    <td class="px-2 py-1">{{ r.cpu }}</td>
+                    <td class="px-2 py-1">{{ r.memory }}</td>
+                    <td class="px-2 py-1">{{ r.unique_clients }}</td>
+                    <td class="px-2 py-1">{{ r.cc }}</td>
+                    <td class="px-2 py-1">{{ r.cs }}</td>
+                    <td class="px-2 py-1">{{ r.http }}</td>
+                    <td class="px-2 py-1">{{ r.https }}</td>
+                    <td class="px-2 py-1">{{ r.ftp }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-        createApp({
-            setup() {
-                const socket = io()
-                
-                // 탭 관리
-                const tabs = ref([
-                    { id: 'proxies', name: '프록시 서버' },
-                    { id: 'policies', name: '정책 목록' },
-                    { id: 'lists', name: '리스트' },
-                    { id: 'configurations', name: '설정' }
-                ])
-                const activeTab = ref('proxies')
+    <!-- 세션 모니터 -->
+    <div v-if="tab==='session'" class="bg-white p-4 rounded shadow space-y-4">
+        <div class="flex flex-wrap items-end space-x-2">
+            <select v-model.number="sessionServer" class="border p-1">
+                <option value="">서버 선택</option>
+                <option v-for="s in servers" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+            <input v-model="search" placeholder="검색" class="border p-1">
+            <button @click="loadSessions" class="px-2 py-1 border">조회</button>
+        </div>
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-2 py-1">데이터</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(s, idx) in sessions" :key="idx" class="border-t">
+                    <td class="px-2 py-1 text-xs whitespace-pre">{{ JSON.stringify(s) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-                // 프록시 그룹 관리
-                const proxyGroups = ref([])
-                const showAddGroupModal = ref(false)
-                const editingGroup = ref(null)
-                const groupForm = ref({
-                    name: '',
-                    description: ''
-                })
+<script>
+const { createApp, ref, onMounted } = Vue;
+createApp({
+    setup() {
+        const tab = ref('proxy');
+        const groups = ref([]);
+        const servers = ref([]);
+        const groupForm = ref({id:null,name:'',description:''});
+        const serverForm = ref({id:null,name:'',ip_address:'',port:0,group_id:'',is_main:false,enabled:true});
+        const resources = ref([]);
+        const sessions = ref([]);
+        const filterGroup = ref('');
+        const filterServer = ref('');
+        const sessionServer = ref('');
+        const search = ref('');
+        const interval = ref(60);
 
-                // 프록시 서버 관리
-                const proxyServers = ref([])
-                const showAddServerModal = ref(false)
-                const editingServer = ref(null)
-                const serverForm = ref({
-                    name: '',
-                    ip_address: '',
-                    port: null,
-                    group_id: '',
-                    is_main: false,
-                    enabled: true,
-                    proxy_metadata: {}
-                })
-
-                // 정책 관리
-                const policies = ref([])
-                const currentPage = ref(1)
-                const totalPages = ref(1)
-                const searchQuery = ref('')
-
-                // 리스트
-                const lists = ref([])
-
-                // 설정
-                const configurations = ref([])
-                const mainAppliances = ref([])
-                const isUpdating = ref(false)
-
-                // 날짜 포맷 함수
-                const formatDate = (date) => {
-                    if (!date) return '-'
-                    return new Date(date).toLocaleString('ko-KR')
-                }
-
-                // 상태 관련 함수들
-                const getStatusClass = (status) => {
-                    const classes = {
-                        'success': 'bg-green-100 text-green-800',
-                        'error': 'bg-red-100 text-red-800',
-                        'updating': 'bg-yellow-100 text-yellow-800',
-                        'pending': 'bg-gray-100 text-gray-800'
-                    }
-                    return classes[status] || classes.pending
-                }
-
-                const getStatusText = (status) => {
-                    const texts = {
-                        'success': '성공',
-                        'error': '실패',
-                        'updating': '업데이트 중',
-                        'pending': '대기 중'
-                    }
-                    return texts[status] || '알 수 없음'
-                }
-
-                // Main Appliance 관련 함수들
-                const loadMainAppliances = async () => {
-                    try {
-                        const response = await fetch('/api/proxy/main-appliances')
-                        mainAppliances.value = await response.json()
-                    } catch (error) {
-                        console.error('Main Appliance 로딩 실패:', error)
-                    }
-                }
-
-                const updateMainAppliancePolicy = async () => {
-                    isUpdating.value = true
-                    try {
-                        const response = await fetch('/api/proxy/update-policies', {
-                            method: 'POST'
-                        })
-                        if (response.ok) {
-                            await loadMainAppliances()
-                        }
-                    } catch (error) {
-                        console.error('정책 업데이트 실패:', error)
-                    } finally {
-                        isUpdating.value = false
-                    }
-                }
-
-                const updateSingleMainAppliance = async (server) => {
-                    server.is_updating = true
-                    try {
-                        const response = await fetch(`/api/proxy/update-policy/${server.id}`, {
-                            method: 'POST'
-                        })
-                        if (response.ok) {
-                            await loadMainAppliances()
-                        }
-                    } catch (error) {
-                        console.error('단일 Main Appliance 업데이트 실패:', error)
-                    } finally {
-                        server.is_updating = false
-                    }
-                }
-
-                // 데이터 로딩 함수들
-                const loadProxyGroups = async () => {
-                    try {
-                        const response = await fetch('/api/proxy/groups')
-                        proxyGroups.value = await response.json()
-                    } catch (error) {
-                        console.error('프록시 그룹 로딩 실패:', error)
-                    }
-                }
-
-                const loadProxyServers = async () => {
-                    try {
-                        const response = await fetch('/api/proxy/servers')
-                        proxyServers.value = await response.json()
-                    } catch (error) {
-                        console.error('프록시 서버 로딩 실패:', error)
-                    }
-                }
-
-                const loadPolicies = async () => {
-                    try {
-                        const response = await fetch(`/api/policies?page=${currentPage.value}&search=${searchQuery.value}`)
-                        const data = await response.json()
-                        policies.value = data.items
-                        totalPages.value = data.pages
-                    } catch (error) {
-                        console.error('정책 로딩 실패:', error)
-                    }
-                }
-
-                const loadLists = async () => {
-                    try {
-                        const response = await fetch('/api/lists')
-                        lists.value = await response.json()
-                    } catch (error) {
-                        console.error('리스트 로딩 실패:', error)
-                    }
-                }
-
-                const loadConfigurations = async () => {
-                    try {
-                        const response = await fetch('/api/configurations')
-                        configurations.value = await response.json()
-                    } catch (error) {
-                        console.error('설정 로딩 실패:', error)
-                    }
-                }
-
-                // 프록시 그룹 CRUD
-                const saveGroup = async () => {
-                    try {
-                        const url = editingGroup.value
-                            ? `/api/proxy/groups/${editingGroup.value.id}`
-                            : '/api/proxy/groups'
-                        const method = editingGroup.value ? 'PUT' : 'POST'
-                        
-                        const response = await fetch(url, {
-                            method,
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(groupForm.value)
-                        })
-
-                        if (response.ok) {
-                            await loadProxyGroups()
-                            showAddGroupModal.value = false
-                            editingGroup.value = null
-                            groupForm.value = { name: '', description: '' }
-                        }
-                    } catch (error) {
-                        console.error('그룹 저장 실패:', error)
-                    }
-                }
-
-                const editGroup = (group) => {
-                    editingGroup.value = group
-                    groupForm.value = {
-                        name: group.name,
-                        description: group.description
-                    }
-                    showAddGroupModal.value = true
-                }
-
-                const deleteGroup = async (groupId) => {
-                    if (confirm('이 그룹을 삭제하시겠습니까?')) {
-                        try {
-                            const response = await fetch(`/api/proxy/groups/${groupId}`, {
-                                method: 'DELETE'
-                            })
-                            if (response.ok) {
-                                await loadProxyGroups()
-                            }
-                        } catch (error) {
-                            console.error('그룹 삭제 실패:', error)
-                        }
-                    }
-                }
-
-                // 프록시 서버 CRUD
-                const saveServer = async () => {
-                    try {
-                        const url = editingServer.value
-                            ? `/api/proxy/servers/${editingServer.value.id}`
-                            : '/api/proxy/servers'
-                        const method = editingServer.value ? 'PUT' : 'POST'
-                        
-                        const response = await fetch(url, {
-                            method,
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(serverForm.value)
-                        })
-
-                        if (response.ok) {
-                            await loadProxyServers()
-                            showAddServerModal.value = false
-                            editingServer.value = null
-                            serverForm.value = {
-                                name: '',
-                                ip_address: '',
-                                port: null,
-                                group_id: '',
-                                is_main: false,
-                                enabled: true,
-                                proxy_metadata: {}
-                            }
-                        }
-                    } catch (error) {
-                        console.error('서버 저장 실패:', error)
-                    }
-                }
-
-                const editServer = (server) => {
-                    editingServer.value = server
-                    serverForm.value = {
-                        name: server.name,
-                        ip_address: server.ip_address,
-                        port: server.port,
-                        group_id: server.group_id,
-                        is_main: server.is_main,
-                        enabled: server.enabled,
-                        proxy_metadata: server.proxy_metadata || {}
-                    }
-                    showAddServerModal.value = true
-                }
-
-                const deleteServer = async (serverId) => {
-                    if (confirm('이 서버를 삭제하시겠습니까?')) {
-                        try {
-                            const response = await fetch(`/api/proxy/servers/${serverId}`, {
-                                method: 'DELETE'
-                            })
-                            if (response.ok) {
-                                await loadProxyServers()
-                            }
-                        } catch (error) {
-                            console.error('서버 삭제 실패:', error)
-                        }
-                    }
-                }
-
-                // 정책 관련 함수들
-                const searchPolicies = () => {
-                    currentPage.value = 1
-                    loadPolicies()
-                }
-
-                const showPolicyDetail = async (itemId) => {
-                    try {
-                        const response = await fetch(`/api/policy/${itemId}`)
-                        const policy = await response.json()
-                        console.log('정책 상세:', policy)
-                        // TODO: 정책 상세 모달 구현
-                    } catch (error) {
-                        console.error('정책 상세 로딩 실패:', error)
-                    }
-                }
-
-                // 감시자
-                watch(currentPage, loadPolicies)
-                watch(activeTab, (newTab) => {
-                    switch (newTab) {
-                        case 'proxies':
-                            loadProxyGroups()
-                            loadProxyServers()
-                            break
-                        case 'policies':
-                            loadPolicies()
-                            break
-                        case 'lists':
-                            loadLists()
-                            break
-                        case 'configurations':
-                            loadConfigurations()
-                            loadProxyServers()
-                            loadMainAppliances()
-                            break
-                    }
-                })
-
-                // 초기 데이터 로딩
-                onMounted(() => {
-                    loadProxyGroups()
-                    loadProxyServers()
-                })
-
-                return {
-                    // 상태
-                    tabs,
-                    activeTab,
-                    proxyGroups,
-                    proxyServers,
-                    policies,
-                    lists,
-                    configurations,
-                    currentPage,
-                    totalPages,
-                    searchQuery,
-                    showAddGroupModal,
-                    showAddServerModal,
-                    groupForm,
-                    serverForm,
-                    editingGroup,
-                    editingServer,
-                    mainAppliances,
-                    isUpdating,
-                    formatDate,
-                    getStatusClass,
-                    getStatusText,
-
-                    // 메서드
-                    saveGroup,
-                    editGroup,
-                    deleteGroup,
-                    saveServer,
-                    editServer,
-                    deleteServer,
-                    searchPolicies,
-                    showPolicyDetail,
-                    updateMainAppliancePolicy,
-                    updateSingleMainAppliance
-                }
+        const loadGroups = async () => {
+            const res = await fetch('/api/proxy/groups');
+            groups.value = await res.json();
+        };
+        const loadServers = async () => {
+            const res = await fetch('/api/proxy/servers');
+            const data = await res.json();
+            servers.value = data.map(s => ({...s, group_name: groups.value.find(g => g.id===s.group_id)?.name || ''}));
+        };
+        const resetGroup = () => { groupForm.value = {id:null,name:'',description:''}; };
+        const resetServer = () => { serverForm.value = {id:null,name:'',ip_address:'',port:0,group_id:'',is_main:false,enabled:true}; };
+        const saveGroup = async () => {
+            if(groupForm.value.id){
+                await fetch(`/api/proxy/groups/${groupForm.value.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(groupForm.value)});
+            }else{
+                await fetch('/api/proxy/groups',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(groupForm.value)});
             }
-        }).mount('#app')
-    </script>
-        {% endraw %}
+            resetGroup();
+            await loadGroups();
+            await loadServers();
+        };
+        const editGroup = g => { groupForm.value = {...g}; };
+        const deleteGroup = async id => { if(confirm('삭제하시겠습니까?')){ await fetch(`/api/proxy/groups/${id}`,{method:'DELETE'}); await loadGroups(); await loadServers(); } };
+        const saveServer = async () => {
+            const payload = {...serverForm.value};
+            if(serverForm.value.id){
+                await fetch(`/api/proxy/servers/${serverForm.value.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            }else{
+                await fetch('/api/proxy/servers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+            }
+            resetServer();
+            await loadServers();
+        };
+        const editServer = s => { serverForm.value = {...s}; };
+        const deleteServer = async id => { if(confirm('삭제하시겠습니까?')){ await fetch(`/api/proxy/servers/${id}`,{method:'DELETE'}); await loadServers(); } };
+
+        const loadResources = async () => {
+            const params = new URLSearchParams();
+            if(filterGroup.value) params.append('group', filterGroup.value);
+            if(filterServer.value) params.append('proxy', filterServer.value);
+            const res = await fetch(`/api/monitoring/resources?${params}`);
+            resources.value = await res.json();
+        };
+        const startMonitoring = async () => { await fetch('/api/monitoring/start',{method:'POST'}); };
+        const stopMonitoring = async () => { await fetch('/api/monitoring/stop',{method:'POST'}); };
+        const setIntervalApi = async () => { await fetch('/api/monitoring/interval',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:interval.value})}); };
+
+        const loadSessions = async () => {
+            const params = new URLSearchParams();
+            if(sessionServer.value) params.append('proxy', sessionServer.value);
+            if(search.value) params.append('search', search.value);
+            const res = await fetch(`/api/monitoring/sessions?${params}`);
+            sessions.value = await res.json();
+        };
+
+        onMounted(async () => {
+            await loadGroups();
+            await loadServers();
+            await loadResources();
+        });
+
+        const socket = io();
+        socket.on('resource_update', data => { resources.value.unshift(data); });
+        socket.on('session_update', data => { sessions.value = data; });
+
+        return { tab, groups, servers, groupForm, serverForm, resources, sessions, filterGroup, filterServer, interval, sessionServer, search,
+            saveGroup, editGroup, deleteGroup, resetGroup,
+            saveServer, editServer, deleteServer, resetServer,
+            loadResources, startMonitoring, stopMonitoring, setIntervalApi, loadSessions };
+    }
+}).mount('#app');
+</script>
 </body>
-</html> 
+</html>
+{% endraw %}

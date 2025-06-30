@@ -25,7 +25,7 @@ class ProxyServer(db.Model):
     description = db.Column(db.String(500))
     is_main = db.Column(db.Boolean, default=False)  # Main Appliance 여부
     enabled = db.Column(db.Boolean, default=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("proxy_groups.id"))
+    group_id = db.Column(db.Integer, db.ForeignKey("proxy_groups.id"), index=True)
     
     # SSH 접속 정보
     ssh_username = db.Column(db.String(100))
@@ -46,6 +46,37 @@ class ProxyServer(db.Model):
     # 업데이트 관련 필드 추가
     last_update = db.Column(db.DateTime, default=None)
     update_status = db.Column(db.String(20), default='pending')  # pending, updating, success, error
-    
+
     def __repr__(self):
-        return f'<ProxyServer {self.name}>' 
+        return f'<ProxyServer {self.name}>'
+
+
+class ResourceStat(db.Model):
+    """프록시 리소스 수집 데이터"""
+    __tablename__ = 'resource_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    proxy_id = db.Column(db.Integer, db.ForeignKey('proxy_servers.id'), nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    cpu = db.Column(db.Float)
+    memory = db.Column(db.Float)
+    unique_clients = db.Column(db.Integer)
+    cc = db.Column(db.Integer)
+    cs = db.Column(db.Integer)
+    http = db.Column(db.Integer)
+    https = db.Column(db.Integer)
+    ftp = db.Column(db.Integer)
+
+    proxy = db.relationship('ProxyServer')
+
+
+class SessionInfo(db.Model):
+    """세션 모니터링 데이터"""
+    __tablename__ = 'session_info'
+
+    id = db.Column(db.Integer, primary_key=True)
+    proxy_id = db.Column(db.Integer, db.ForeignKey('proxy_servers.id'), nullable=False, index=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    data = db.Column(db.JSON)
+
+    proxy = db.relationship('ProxyServer')
